@@ -6559,9 +6559,9 @@ function renderGotras(){
   const cnt  = document.getElementById('gotra-count');
   if(!list) return;
   cnt.textContent = '(' + gotras.length + ')';
-  list.innerHTML = gotras.map(g =>
+  list.innerHTML = gotras.map((g, idx) =>
     `<div style="display:flex;align-items:center;gap:.3rem;background:var(--card2);border:1px solid var(--bdr);border-radius:20px;padding:.18rem .6rem .18rem .72rem;font-size:.72rem;color:var(--tx)">
-      ${g}<span onclick="removeGotra('${g}')" style="cursor:pointer;color:var(--rd);font-size:.75rem;margin-left:.2rem;font-weight:700">×</span>
+      ${escapeHtml(g)}<span onclick="removeGotraAt(${idx})" style="cursor:pointer;color:var(--rd);font-size:.75rem;margin-left:.2rem;font-weight:700">×</span>
     </div>`
   ).join('');
 }
@@ -6584,9 +6584,12 @@ async function addGotra(){
   );
 }
 
-async function removeGotra(name){
-  let gotras = getGotras().filter(g => g !== name);
-  const result = await saveSharedAdminConfig('parichayam_gotras', gotras);
+async function removeGotraAt(idx){
+  const gotras = getGotras();
+  const name = gotras[idx];
+  if (typeof name === 'undefined') return;
+  const nextGotras = gotras.filter((_, index) => index !== idx);
+  const result = await saveSharedAdminConfig('parichayam_gotras', nextGotras);
   renderGotras();
   toastSharedAdminConfig(
     result,
@@ -6989,7 +6992,7 @@ function renderCommunityList() {
   cnt.textContent = '(' + communities.length + ')';
   list.innerHTML = communities.map((c, i) => `
     <div style="display:inline-flex;align-items:center;gap:.35rem;background:rgba(201,150,58,.12);border:1px solid var(--bdr2);border-radius:20px;padding:.28rem .75rem .28rem .9rem;font-size:.74rem;color:var(--gl)">
-      ${c}
+      ${escapeHtml(c)}
       ${communities.length > 1
         ? `<span onclick="removeCommunity(${i})" style="cursor:pointer;color:var(--rd);font-size:.8rem;margin-left:.1rem;font-weight:700;line-height:1" title="Remove">x</span>`
         : '<span style="font-size:.58rem;color:var(--mu);margin-left:.2rem">(default)</span>'}
