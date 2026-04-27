@@ -2,6 +2,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { FieldValue, Timestamp } = require("firebase-admin/firestore");
 const crypto = require("crypto");
 
 if (!admin.apps.length) {
@@ -156,7 +157,7 @@ function buildPublicProfileDoc(member) {
     verificationLabel: getVerificationLabel(member),
     aadhaarVerified: member?.aadhaarVerified === true || member?.verificationStatus?.aadhaar === "verified",
     incomeVerified: member?.incomeVerified === true || member?.verificationStatus?.income === "verified",
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 }
 
@@ -889,11 +890,11 @@ async function assignProfileNumberIfMissingServer(uid) {
     const profileNumber = profileNumberFromCounter(nextValue);
     transaction.set(counterRef, {
       nextValue: nextValue + 1,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
     transaction.set(memberRef, {
       profileNumber,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
     return profileNumber;
   });
@@ -925,7 +926,7 @@ async function enforceLookupRateLimit(uid) {
       uid: cleanUid,
       windowStart,
       count: nextCount,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
 }
@@ -1021,7 +1022,7 @@ async function initializeMemberProfileForUid(uid, payload, authUserRecord) {
       transaction.set(phoneIndexRef, {
         uid: cleanUid,
         email: safeEmail,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
     }
     transaction.set(memberRef, member, { merge: true });
@@ -1131,7 +1132,7 @@ async function enforceAuthRateLimit(scope, key, limit, windowMs, message) {
       key: String(key || ""),
       count: count + 1,
       windowStart,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
 }
@@ -1194,7 +1195,18 @@ function computeMembershipTotal(plan, pricing) {
 }
 
 function revenueTimestampFromMs(ms) {
-  return admin.firestore.Timestamp.fromDate(new Date(ms));
+  return Timestamp.fromDate(new Date(ms));
+}
+
+function roundMoney(value) {
+  const numberValue = Number(value || 0);
+  if (!Number.isFinite(numberValue)) return 0;
+  return Math.round(numberValue * 100) / 100;
+}
+
+function isFunctionsEmulatorRuntime() {
+  return process.env.FUNCTIONS_EMULATOR === "true" ||
+    process.env.PARICHAYAM_EMULATOR_REFUND_FALLBACK === "true";
 }
 
 function safeRevenueEventId(prefix, value) {
@@ -1221,8 +1233,8 @@ function normalizeRevenueMemberTier(memberData, planName) {
   const source = `${memberData?.memberTier || ""} ${memberData?.tier || ""} ${planName || memberData?.planName || ""}`;
   const upper = source.toUpperCase();
   if (upper.includes("ELITE")) return "ELITE";
-  if (upper.includes("PREMIUM") || upper.includes("PAID")) return "PREMIUM";
   if (upper.includes("ASSISTED")) return "ASSISTED";
+  if (upper.includes("PREMIUM") || upper.includes("PAID")) return "PREMIUM";
   return "BASIC";
 }
 
@@ -1276,7 +1288,7 @@ function buildMembershipRevenueEvents(params) {
   const isLocked = lockExpiresMs > Date.now();
   const agentId = String(agentInfo.id || "").trim();
   const agentCommissionRate = agentId ? REFERRED_AGENT_COMMISSION_RATE : 0;
-  const agentCommissionAmount = agentId ? Math.round(chargeAmount * agentCommissionRate) : 0;
+  const agentCommissionAmount = agentId ? roundMoney(chargeAmount * agentCommissionRate) : 0;
   const basePrice = computeRevenueBasePrice(chargeAmount, orderData, memberData);
   const discountApplied = Math.max(0, Math.round(Number(orderData.discountApplied || memberData.discountApplied || 0)));
   const memberTier = normalizeRevenueMemberTier(memberData, planName);
@@ -1306,7 +1318,7 @@ function buildMembershipRevenueEvents(params) {
     relatedEventId: "",
     lockExpiresAt,
     isLocked,
-    createdAt: params.createdAt || admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: params.createdAt || FieldValue.serverTimestamp(),
     createdBy: String(params.createdBy || "system"),
     metadata,
     status: "recorded",
@@ -1325,6 +1337,11 @@ function buildMembershipRevenueEvents(params) {
 }
 
 async function createRazorpayRefund(paymentId, amountInRupees, notes) {
+  if (isFunctionsEmulatorRuntime()) {
+    const error = new Error("Razorpay refund skipped in emulator; ledger fallback is active.");
+    error.status = 502;
+    throw error;
+  }
   const amountInPaise = Math.max(1, Math.round(Number(amountInRupees || 0) * 100));
   const response = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
     method: "POST",
@@ -2051,7 +2068,7 @@ exports.createPaymentOrder = onRequest({ region: "us-central1" }, async (req, re
         amount: totalInr,
         paymentStatus: "pending",
         status: "awaiting_payment",
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
     }
     const currency = "INR";
@@ -2067,8 +2084,8 @@ exports.createPaymentOrder = onRequest({ region: "us-central1" }, async (req, re
       currency,
       razorpayOrderId: String(order.id || ""),
       status: "created",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
     await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderDoc.razorpayOrderId).set(orderDoc, { merge: true });
     sendJson(req, res, 200, {
@@ -2173,7 +2190,7 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
           paymentCurrency: String(orderData.currency || "INR"),
           paymentStatus: "paid",
           paidAt,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         };
         const revenueEvents = buildMembershipRevenueEvents({
           memberId: authUser.uid,
@@ -2238,7 +2255,7 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
           paymentCurrency: String(orderData.currency || "INR"),
           reminderCount: 0,
           lastReminderAt: "",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
         const verificationStatus = {
           ...(memberData.verificationStatus || {}),
@@ -2246,7 +2263,7 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
         };
         transaction.set(memberRef, {
           verificationStatus,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
         responsePayload = {
           ok: true,
@@ -2272,8 +2289,8 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
       transaction.set(orderRef, {
         status: "paid",
         paymentId,
-        verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        verifiedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
       transaction.set(paymentRef, {
         uid: authUser.uid,
@@ -2288,7 +2305,7 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
         amountInr: Number(orderData.amountInr || 0),
         currency: String(orderData.currency || "INR"),
         status: "paid",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       }, { merge: true });
     });
     sendJson(req, res, 200, responsePayload || { ok: true });
@@ -2498,7 +2515,7 @@ exports.calculateAgentCommissions = onRequest({ region: "us-central1" }, async (
     let unlockedAmount = 0;
     snap.forEach((doc) => {
       const event = doc.data() || {};
-      const commissionAmount = Math.max(0, Math.round(Number(event.agentCommissionAmount || event.amount || 0)));
+      const commissionAmount = Math.max(0, roundMoney(event.agentCommissionAmount || event.amount || 0));
       const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
       if (lockExpiresMs > nowMs) lockedAmount += commissionAmount;
       else unlockedAmount += commissionAmount;
@@ -2507,9 +2524,9 @@ exports.calculateAgentCommissions = onRequest({ region: "us-central1" }, async (
     sendJson(req, res, 200, {
       ok: true,
       agentId: requestedAgentId,
-      totalUnpaidCommissions: lockedAmount + unlockedAmount,
-      lockedAmount,
-      unlockedAmount,
+      totalUnpaidCommissions: roundMoney(lockedAmount + unlockedAmount),
+      lockedAmount: roundMoney(lockedAmount),
+      unlockedAmount: roundMoney(unlockedAmount),
       eventCount: snap.size,
       asOf: nowIso(),
     });
@@ -2569,7 +2586,7 @@ async function logAgentActivity(agentId, type, description, extra) {
     type,
     description,
     ...(extra || {}),
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 }
 
@@ -2626,11 +2643,11 @@ exports.adminCreateAgent = onRequest({ region: "us-central1" }, async (req, res)
       commissionPercent,
       upiId,
       totalEarned: 0, totalPaidOut: 0, totalLeads: 0, totalConversions: 0,
-      lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActiveAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       createdBy: adminUser.uid,
       onboardingPath: "admin-created",
-      statusChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+      statusChangedAt: FieldValue.serverTimestamp(),
       statusChangedBy: adminUser.uid,
       payoutHold: false,
       notes: adminNotes,
@@ -2693,13 +2710,13 @@ exports.adminUpdateAgent = onRequest({ region: "us-central1" }, async (req, res)
     if (!agentSnap.exists) { sendJson(req, res, 404, { message: "Agent not found." }); return; }
 
     const current = agentSnap.data();
-    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
 
     // Status change
     if (req.body?.status && VALID_AGENT_STATUSES.includes(req.body.status) && req.body.status !== current.status) {
       if (current.status === "deactivated") { sendJson(req, res, 400, { message: "Cannot reactivate a deactivated agent." }); return; }
       updates.status = req.body.status;
-      updates.statusChangedAt = admin.firestore.FieldValue.serverTimestamp();
+      updates.statusChangedAt = FieldValue.serverTimestamp();
       updates.statusChangedBy = adminUser.uid;
       updates.statusReason = String(req.body?.reason || "").trim();
       if (req.body.status === "deactivated") {
@@ -2766,9 +2783,9 @@ exports.adminProcessPayout = onRequest({ region: "us-central1" }, async (req, re
       if (payout.status !== "requested") { throw new Error("400:This payout has already been processed."); }
 
       const update = {
-        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processedAt: FieldValue.serverTimestamp(),
         processedBy: adminUser.uid,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
       
       let statusResult = "rejected";
@@ -2780,7 +2797,7 @@ exports.adminProcessPayout = onRequest({ region: "us-central1" }, async (req, re
         
         // Update agent totalPaidOut
         const agentRef = db.collection(AGENTS_COLLECTION).doc(payout.agentId);
-        transaction.set(agentRef, { totalPaidOut: admin.firestore.FieldValue.increment(Number(payout.amount || 0)), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        transaction.set(agentRef, { totalPaidOut: FieldValue.increment(Number(payout.amount || 0)), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       } else {
         update.status = "rejected";
         update.rejectReason = String(req.body?.reason || "").trim();
@@ -2856,7 +2873,7 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
 
     const lockExpiresMs = parseTimestampMs(originalEvent.lockExpiresAt);
     const lockActive = lockExpiresMs ? lockExpiresMs > Date.now() : originalEvent.isLocked === true;
-    const originalCommissionAmount = Math.max(0, Math.round(Number(originalEvent.agentCommissionAmount || 0)));
+    const originalCommissionAmount = Math.max(0, roundMoney(originalEvent.agentCommissionAmount || 0));
     const agentId = String(originalEvent.agentId || "").trim();
     let commissionDoc = null;
     if (lockActive && agentId && originalCommissionAmount > 0) {
@@ -2869,12 +2886,28 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
       commissionDoc = commissionSnap.empty ? null : commissionSnap.docs[0];
     }
 
-    const refund = await createRazorpayRefund(paymentId, refundAmount, {
-      memberId: String(originalEvent.memberId || ""),
-      orderId,
-      reason,
-      processedBy: adminUser.uid,
-    });
+    let refund = null;
+    let refundAttemptError = "";
+    try {
+      refund = await createRazorpayRefund(paymentId, refundAmount, {
+        memberId: String(originalEvent.memberId || ""),
+        orderId,
+        reason,
+        processedBy: adminUser.uid,
+      });
+    } catch (refundError) {
+      if (!isFunctionsEmulatorRuntime()) throw refundError;
+      refundAttemptError = refundError?.message || String(refundError || "Unknown Razorpay emulator error");
+      logger.warn("processRefund: Razorpay refund failed in emulator; recording ledger fallback.", {
+        orderId,
+        paymentId,
+        refundAttemptError,
+      });
+      refund = {
+        id: safeRevenueEventId("emulator_refund", `${paymentId}_${Date.now()}`),
+        status: "emulator_refund_attempt_failed",
+      };
+    }
 
     const refundEventId = safeRevenueEventId("refund_issued", refund.id || `${paymentId}_${Date.now()}`);
     const clawbackAmount = lockActive && agentId ? originalCommissionAmount : 0;
@@ -2910,11 +2943,12 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
         relatedEventId: originalDoc.id,
         lockExpiresAt: null,
         isLocked: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
         createdBy: adminUser.uid,
         metadata: {
           ...baseMetadata,
           razorpayRefundId: String(refund.id || ""),
+          refundAttemptError,
         },
         status: "recorded",
         version: REVENUE_SCHEMA_VERSION,
@@ -2935,13 +2969,14 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
           relatedEventId: originalDoc.id,
           lockExpiresAt: null,
           isLocked: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           createdBy: adminUser.uid,
           metadata: {
             ...baseMetadata,
             notes: String(req.body?.notes || `Commission clawback for refund: ${reason}`),
             originalCommissionEventId: commissionDoc?.id || "",
             razorpayRefundId: String(refund.id || ""),
+            refundAttemptError,
           },
           status: "recorded",
           version: REVENUE_SCHEMA_VERSION,
@@ -2956,6 +2991,7 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
       refundEventId,
       clawbackEventId,
       status: String(refund.status || "processed"),
+      refundAttemptError,
       lockActive,
       refundedAmount: refundAmount,
       clawbackAmount,
@@ -2984,6 +3020,7 @@ exports.adminBackfillRevenueEvents = onRequest({ region: "us-central1" }, async 
     let skippedExisting = 0;
     let skippedUnpaid = 0;
     let skippedInvalidAmount = 0;
+    const wouldBackfillMemberIds = [];
 
     async function flushBatch(force) {
       if (!pendingWrites || (!force && pendingWrites < 400)) return;
@@ -3045,6 +3082,7 @@ exports.adminBackfillRevenueEvents = onRequest({ region: "us-central1" }, async 
 
       createdMembershipEvents++;
       if (events.commissionEvent) createdCommissionEvents++;
+      if (wouldBackfillMemberIds.length < 100) wouldBackfillMemberIds.push(doc.id);
       if (dryRun) continue;
 
       batch.create(membershipRef, events.membershipEvent);
@@ -3066,6 +3104,7 @@ exports.adminBackfillRevenueEvents = onRequest({ region: "us-central1" }, async 
       skippedExisting,
       skippedUnpaid,
       skippedInvalidAmount,
+      wouldBackfillMemberIds,
       createdBy: adminUser.uid,
     });
   } catch (error) {
@@ -3088,7 +3127,7 @@ exports.adminResetAgentPassword = onRequest({ region: "us-central1" }, async (re
     const mobile = agentSnap.data()?.mobile || "";
     const tempPassword = "Agent" + mobile.slice(-4) + "!" + Math.random().toString(36).slice(-3).toUpperCase();
     await admin.auth().updateUser(agentId, { password: tempPassword });
-    await db.collection(AGENTS_COLLECTION).doc(agentId).set({ passwordChangedAt: null, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection(AGENTS_COLLECTION).doc(agentId).set({ passwordChangedAt: null, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     sendJson(req, res, 200, { ok: true, tempPassword });
   } catch (error) {
     logger.error("adminResetAgentPassword failed", error);
@@ -3120,7 +3159,7 @@ exports.agentGetDashboard = onRequest({ region: "us-central1" }, async (req, res
     const { agent } = await verifyAgentUser(req);
 
     // Update lastActiveAt
-    await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ lastActiveAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ lastActiveAt: FieldValue.serverTimestamp() }, { merge: true });
 
     // Get leads summary
     const leadsSnap = await db.collection(AGENT_LEADS_COLLECTION).where("agentId", "==", agent.id).get();
@@ -3254,13 +3293,13 @@ exports.agentAddLead = onRequest({ region: "us-central1" }, async (req, res) => 
       followUpDone: false,
       commissionCredited: false,
       commissionAmount: 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
     const docRef = await db.collection(AGENT_LEADS_COLLECTION).add(leadDoc);
 
     // Update agent lead count
-    await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ totalLeads: admin.firestore.FieldValue.increment(1), updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ totalLeads: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     await logAgentActivity(agent.id, "lead_added", `Added lead ${name} (${mobile}).`, { leadId: docRef.id, leadName: name });
 
     sendJson(req, res, 200, { ok: true, lead: { id: docRef.id, ...leadDoc, createdAt: nowIso(), updatedAt: nowIso() } });
@@ -3286,7 +3325,7 @@ exports.agentUpdateLead = onRequest({ region: "us-central1" }, async (req, res) 
     if (!leadSnap.exists) { sendJson(req, res, 404, { message: "Lead not found." }); return; }
     if (leadSnap.data().agentId !== agent.id) { sendJson(req, res, 403, { message: "This lead does not belong to you." }); return; }
 
-    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
 
     // Stage change
     if (req.body?.stage && VALID_LEAD_STAGES.includes(req.body.stage)) {
@@ -3305,7 +3344,7 @@ exports.agentUpdateLead = onRequest({ region: "us-central1" }, async (req, res) 
     if (req.body?.note) {
       const noteText = String(req.body.note).trim().slice(0, 500);
       if (noteText) {
-        updates.notes = admin.firestore.FieldValue.arrayUnion({ text: noteText, at: nowIso(), by: "agent" });
+        updates.notes = FieldValue.arrayUnion({ text: noteText, at: nowIso(), by: "agent" });
         await logAgentActivity(agent.id, "note_added", `Note added to lead ${leadSnap.data().name}.`, { leadId, leadName: leadSnap.data().name });
       }
     }
@@ -3365,14 +3404,14 @@ exports.agentRequestPayout = onRequest({ region: "us-central1" }, async (req, re
       upiId,
       note,
       status: "requested",
-      requestedAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      requestedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     };
     const docRef = await db.collection("agentPayoutRequests").add(payoutDoc);
 
     // Save UPI ID to agent profile if provided
     if (upiId && upiId !== agent.upiId) {
-      await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ upiId, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ upiId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
 
     await logAgentActivity(agent.id, "payout_requested", `Payout of Rs ${balance.availableBalance} requested.`);
@@ -3391,7 +3430,7 @@ exports.agentUpdateProfile = onRequest({ region: "us-central1" }, async (req, re
   try {
     const { agent } = await verifyAgentUser(req);
     requireActiveAgent(agent);
-    const updates = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
     if (req.body?.upiId !== undefined) updates.upiId = String(req.body.upiId).trim();
     if (req.body?.area !== undefined) updates.area = String(req.body.area).trim();
     await db.collection(AGENTS_COLLECTION).doc(agent.id).set(updates, { merge: true });
@@ -3419,7 +3458,7 @@ exports.agentChangePassword = onRequest({ region: "us-central1" }, async (req, r
     }
 
     await admin.auth().updateUser(agent.id, { password: newPassword });
-    const updates = { passwordChangedAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+    const updates = { passwordChangedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() };
     await db.collection(AGENTS_COLLECTION).doc(agent.id).set(updates, { merge: true });
     
     await logAgentActivity(agent.id, "password_changed", "Agent securely changed their password.");
@@ -3458,7 +3497,7 @@ exports.submitAgentApplication = onRequest({ region: "us-central1" }, async (req
     const appDoc = {
       name, mobile, city, state, network, experience, source,
       status: "pending",
-      appliedAt: admin.firestore.FieldValue.serverTimestamp(),
+      appliedAt: FieldValue.serverTimestamp(),
     };
     const docRef = await db.collection("agentApplications").add(appDoc);
     sendJson(req, res, 200, { ok: true, applicationId: docRef.id, message: "Application submitted! We will review and contact you within 2-3 business days." });
@@ -3489,7 +3528,7 @@ exports.adminApproveAgentApplication = onRequest({ region: "us-central1" }, asyn
     if (action === "reject") {
       await appRef.set({
         status: "rejected",
-        rejectedAt: admin.firestore.FieldValue.serverTimestamp(),
+        rejectedAt: FieldValue.serverTimestamp(),
         rejectedBy: adminUser.uid,
         rejectReason: String(req.body?.reason || "").trim(),
       }, { merge: true });
@@ -3523,17 +3562,17 @@ exports.adminApproveAgentApplication = onRequest({ region: "us-central1" }, asyn
       commissionType: "percent",
       commissionPercent,
       upiId: "", totalEarned: 0, totalPaidOut: 0, totalLeads: 0, totalConversions: 0,
-      lastActiveAt: admin.firestore.FieldValue.serverTimestamp(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastActiveAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
       createdBy: adminUser.uid,
       onboardingPath: "self-apply",
       applicationId,
-      statusChangedAt: admin.firestore.FieldValue.serverTimestamp(),
+      statusChangedAt: FieldValue.serverTimestamp(),
       statusChangedBy: adminUser.uid,
       payoutHold: false, notes: "", passwordChangedAt: null,
     };
     await db.collection(AGENTS_COLLECTION).doc(authRecord.uid).set(agentDoc);
-    await appRef.set({ status: "approved", approvedAt: admin.firestore.FieldValue.serverTimestamp(), approvedBy: adminUser.uid, agentId: authRecord.uid }, { merge: true });
+    await appRef.set({ status: "approved", approvedAt: FieldValue.serverTimestamp(), approvedBy: adminUser.uid, agentId: authRecord.uid }, { merge: true });
     await logAgentActivity(authRecord.uid, "agent_created", `Agent ${appData.name} approved from application.`);
 
     sendJson(req, res, 200, {
@@ -3601,7 +3640,7 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
           const leadSnap = await transaction.get(leadRef);
           if (!leadSnap.exists) return;
           const currentLead = leadSnap.data() || {};
-          const updates = { memberUid, updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+          const updates = { memberUid, updatedAt: FieldValue.serverTimestamp() };
           if (memberData?.name) updates.name = memberData.name;
           if (phone) updates.mobile = phone;
           if (memberData?.city) updates.city = memberData.city;
@@ -3626,11 +3665,11 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
             updates.commissionPercent = creditedSnapshot.commissionPercent;
             updates.commissionAmount = creditedSnapshot.commissionAmount;
             updates.paidAmount = creditedSnapshot.paidAmount;
-            updates.convertedAt = admin.firestore.FieldValue.serverTimestamp();
+            updates.convertedAt = FieldValue.serverTimestamp();
             transaction.set(agentRef, {
-              totalEarned: admin.firestore.FieldValue.increment(creditedSnapshot.commissionAmount),
-              totalConversions: admin.firestore.FieldValue.increment(1),
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              totalEarned: FieldValue.increment(creditedSnapshot.commissionAmount),
+              totalConversions: FieldValue.increment(1),
+              updatedAt: FieldValue.serverTimestamp(),
             }, { merge: true });
           }
 
@@ -3666,15 +3705,15 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
           commissionPercent: commissionSnapshot.commissionPercent,
           paidAmount: isConverted ? commissionSnapshot.paidAmount : 0,
           commissionAmount: isConverted ? commissionSnapshot.commissionAmount : 0,
-          convertedAt: isConverted ? admin.firestore.FieldValue.serverTimestamp() : null,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          convertedAt: isConverted ? FieldValue.serverTimestamp() : null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         };
         await db.collection(AGENT_LEADS_COLLECTION).add(leadDoc);
         await db.collection(AGENTS_COLLECTION).doc(agentId).set({
-          totalLeads: admin.firestore.FieldValue.increment(1),
-          ...(isConverted ? { totalConversions: admin.firestore.FieldValue.increment(1), totalEarned: admin.firestore.FieldValue.increment(commissionSnapshot.commissionAmount) } : {}),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          totalLeads: FieldValue.increment(1),
+          ...(isConverted ? { totalConversions: FieldValue.increment(1), totalEarned: FieldValue.increment(commissionSnapshot.commissionAmount) } : {}),
+          updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
         if (isConverted) {
           await logAgentActivity(agentId, "lead_converted", `New lead ${memberData?.name || phone} auto-converted! ${commissionSnapshot.commissionPercent}% commission on Rs ${commissionSnapshot.paidAmount} credited as Rs ${commissionSnapshot.commissionAmount}.`);

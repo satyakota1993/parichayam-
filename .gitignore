@@ -6,3 +6,4 @@ functions/.env
 functions/firebase-debug.log
 firebase-debug.log
 *.log
+firepit-log.txt
