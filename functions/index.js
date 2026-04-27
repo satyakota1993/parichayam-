@@ -23,11 +23,22 @@ const LOOKUP_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const AUTH_RATE_LIMIT_COLLECTION = "authRateLimits";
 const PAYMENT_ORDERS_COLLECTION = "paymentOrders";
 const PAYMENTS_COLLECTION = "payments";
+const REVENUE_EVENTS_COLLECTION = "revenueEvents";
+const REVENUE_SCHEMA_VERSION = 1;
+const REVENUE_LOCK_DAYS = 30;
+const REVENUE_LOCK_MS = REVENUE_LOCK_DAYS * 24 * 60 * 60 * 1000;
+const REFERRED_AGENT_COMMISSION_RATE = 0.15;
 const DEFAULT_MEMBERSHIP_PRICES = {
   "1mo": 199,
   "3mo": 449,
   "6mo": 550,
   annual: 1000,
+};
+const MEMBERSHIP_PLAN_DURATION_DAYS = {
+  "1mo": 30,
+  "3mo": 90,
+  "6mo": 180,
+  annual: 365,
 };
 const DEFAULT_VERIFICATION_SETTINGS = {
   aadhaarFee: 100,
@@ -1182,6 +1193,159 @@ function computeMembershipTotal(plan, pricing) {
   return base + Math.round(base * 0.18);
 }
 
+function revenueTimestampFromMs(ms) {
+  return admin.firestore.Timestamp.fromDate(new Date(ms));
+}
+
+function safeRevenueEventId(prefix, value) {
+  const clean = String(value || Date.now())
+    .trim()
+    .replace(/[^A-Za-z0-9_-]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120) || String(Date.now());
+  return `${prefix}_${clean}`;
+}
+
+function resolvePlanDurationDays(plan, planName) {
+  const normalizedPlan = normalizeMembershipPlan(plan || "");
+  if (MEMBERSHIP_PLAN_DURATION_DAYS[normalizedPlan]) return MEMBERSHIP_PLAN_DURATION_DAYS[normalizedPlan];
+  const label = String(planName || "").trim().toLowerCase();
+  if (label.includes("annual") || label.includes("year")) return 365;
+  if (label.includes("6")) return 180;
+  if (label.includes("3")) return 90;
+  if (label.includes("1")) return 30;
+  return 30;
+}
+
+function normalizeRevenueMemberTier(memberData, planName) {
+  const source = `${memberData?.memberTier || ""} ${memberData?.tier || ""} ${planName || memberData?.planName || ""}`;
+  const upper = source.toUpperCase();
+  if (upper.includes("ELITE")) return "ELITE";
+  if (upper.includes("PREMIUM") || upper.includes("PAID")) return "PREMIUM";
+  if (upper.includes("ASSISTED")) return "ASSISTED";
+  return "BASIC";
+}
+
+function computeRevenueBasePrice(chargeAmount, orderData, memberData) {
+  const direct = Number(orderData?.basePrice ?? orderData?.baseAmountInr ?? memberData?.basePrice ?? 0);
+  if (Number.isFinite(direct) && direct > 0) return Math.round(direct);
+  const amount = Number(chargeAmount || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return Math.round(amount / 1.18);
+}
+
+async function resolveRevenueAgentForMember(memberData, transaction) {
+  const directAgentId = String(
+    memberData?.referredByAgentUid ||
+    memberData?.agentUid ||
+    memberData?.agentId ||
+    ""
+  ).trim();
+  if (directAgentId) {
+    const agentRef = db.collection(AGENTS_COLLECTION).doc(directAgentId);
+    const agentSnap = transaction ? await transaction.get(agentRef) : await agentRef.get();
+    if (agentSnap.exists) {
+      return { id: agentSnap.id, data: agentSnap.data() || {}, referralCode: String(agentSnap.data()?.referralCode || "") };
+    }
+  }
+
+  const referralCode = normalizeAgentRefId(memberData?.referredByAgentRefId || memberData?.agentRefId || "");
+  if (!referralCode) return { id: "", data: null, referralCode: "" };
+
+  const query = db.collection(AGENTS_COLLECTION).where("referralCode", "==", referralCode).limit(1);
+  const snap = transaction ? await transaction.get(query) : await query.get();
+  if (snap.empty) return { id: "", data: null, referralCode };
+  const doc = snap.docs[0];
+  return { id: doc.id, data: doc.data() || {}, referralCode };
+}
+
+function buildMembershipRevenueEvents(params) {
+  const memberId = String(params.memberId || "").trim();
+  const memberData = params.memberData || {};
+  const orderData = params.orderData || {};
+  const orderId = String(params.orderId || orderData.razorpayOrderId || "").trim();
+  const paymentId = String(params.paymentId || "").trim();
+  const agentInfo = params.agentInfo || { id: "", referralCode: "" };
+  const chargeAmount = Math.max(0, Math.round(Number(orderData.amountInr || memberData.lastPaymentAmount || 0)));
+  const plan = normalizeMembershipPlan(orderData.plan || memberData.plan || memberData.pendingPlan || "");
+  const planName = String(orderData.planName || memberData.planName || plan || "").trim();
+  const planDurationDays = resolvePlanDurationDays(plan, planName);
+  const paidAtMs = parseTimestampMs(memberData.paidAt || memberData.lastPaymentAt) || Date.now();
+  const lockExpiresMs = paidAtMs + REVENUE_LOCK_MS;
+  const lockExpiresAt = revenueTimestampFromMs(lockExpiresMs);
+  const isLocked = lockExpiresMs > Date.now();
+  const agentId = String(agentInfo.id || "").trim();
+  const agentCommissionRate = agentId ? REFERRED_AGENT_COMMISSION_RATE : 0;
+  const agentCommissionAmount = agentId ? Math.round(chargeAmount * agentCommissionRate) : 0;
+  const basePrice = computeRevenueBasePrice(chargeAmount, orderData, memberData);
+  const discountApplied = Math.max(0, Math.round(Number(orderData.discountApplied || memberData.discountApplied || 0)));
+  const memberTier = normalizeRevenueMemberTier(memberData, planName);
+  const metadata = {
+    memberTier,
+    planDurationDays,
+    basePrice,
+    discountApplied,
+    paymentGateway: "razorpay",
+    notes: String(params.notes || `Membership activated for ${memberData.name || memberData.fullName || memberId}`),
+    ...(params.ipAddress ? { ipAddress: String(params.ipAddress) } : {}),
+    ...(agentInfo.referralCode ? { agentReferralCode: String(agentInfo.referralCode) } : {}),
+  };
+
+  const membershipEventId = safeRevenueEventId("membership_paid", paymentId || orderId || memberId);
+  const membershipEvent = {
+    eventType: "membership_paid",
+    memberId,
+    amount: chargeAmount,
+    currency: "INR",
+    orderId,
+    paymentId,
+    agentId,
+    agentCommissionRate,
+    agentCommissionAmount,
+    refundReason: "",
+    relatedEventId: "",
+    lockExpiresAt,
+    isLocked,
+    createdAt: params.createdAt || admin.firestore.FieldValue.serverTimestamp(),
+    createdBy: String(params.createdBy || "system"),
+    metadata,
+    status: "recorded",
+    version: REVENUE_SCHEMA_VERSION,
+  };
+
+  const commissionEventId = agentCommissionAmount > 0 ? safeRevenueEventId("agent_commission", paymentId || orderId || memberId) : "";
+  const commissionEvent = commissionEventId ? {
+    ...membershipEvent,
+    eventType: "agent_commission",
+    amount: agentCommissionAmount,
+    relatedEventId: membershipEventId,
+  } : null;
+
+  return { membershipEventId, membershipEvent, commissionEventId, commissionEvent };
+}
+
+async function createRazorpayRefund(paymentId, amountInRupees, notes) {
+  const amountInPaise = Math.max(1, Math.round(Number(amountInRupees || 0) * 100));
+  const response = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/refund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Basic ${Buffer.from(`${razorpayKeyId()}:${razorpayKeySecret()}`).toString("base64")}`,
+    },
+    body: JSON.stringify({
+      amount: amountInPaise,
+      notes: notes || {},
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.id) {
+    const error = new Error(payload?.error?.description || "Unable to issue Razorpay refund.");
+    error.status = 502;
+    throw error;
+  }
+  return payload;
+}
+
 async function createRazorpayOrder(params) {
   const response = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
@@ -1811,6 +1975,7 @@ exports.createPaymentOrder = onRequest({ region: "us-central1" }, async (req, re
         sendJson(req, res, 500, { message: "Unable to calculate membership amount." });
         return;
       }
+      const basePrice = Math.round(Number(pricing?.[plan] || 0));
       orderNotes = {
         uid: authUser.uid,
         purchaseType: "membership",
@@ -1821,6 +1986,10 @@ exports.createPaymentOrder = onRequest({ region: "us-central1" }, async (req, re
         purchaseType: "membership",
         plan,
         amountInr: totalInr,
+        basePrice,
+        discountApplied: 0,
+        planDurationDays: resolvePlanDurationDays(plan, ""),
+        taxAmountInr: Math.max(0, totalInr - basePrice),
       };
     } else {
       const verificationType = normalizeVerificationType(req.body?.verificationType || "");
@@ -1989,6 +2158,8 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
       const memberData = memberSnap.data() || {};
       const purchaseType = String(orderData.purchaseType || "membership").trim().toLowerCase();
       if (purchaseType === "membership") {
+        const paidAt = nowIso();
+        const agentInfo = await resolveRevenueAgentForMember(memberData, transaction);
         const updatedMember = {
           plan: String(orderData.plan || memberData.pendingPlan || "paid"),
           planName: String(req.body?.planName || orderData.plan || ""),
@@ -1996,15 +2167,35 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
           isPaid: true,
           pendingPlan: "",
           lastPaymentId: paymentId,
-          lastPaymentAt: nowIso(),
+          lastPaymentAt: paidAt,
           lastPaymentAmount: Number(orderData.amountInr || 0),
           paymentGateway: "razorpay",
           paymentCurrency: String(orderData.currency || "INR"),
           paymentStatus: "paid",
-          paidAt: nowIso(),
+          paidAt,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
+        const revenueEvents = buildMembershipRevenueEvents({
+          memberId: authUser.uid,
+          memberData: { ...memberData, ...updatedMember },
+          orderData,
+          orderId,
+          paymentId,
+          agentInfo,
+          ipAddress: extractClientIp(req),
+          createdBy: "system",
+        });
         transaction.set(memberRef, updatedMember, { merge: true });
+        transaction.create(
+          db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.membershipEventId),
+          revenueEvents.membershipEvent
+        );
+        if (revenueEvents.commissionEvent) {
+          transaction.create(
+            db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.commissionEventId),
+            revenueEvents.commissionEvent
+          );
+        }
         responsePayload = {
           ok: true,
           purchaseType: "membership",
@@ -2279,6 +2470,54 @@ async function computeAgentBalance(agentId) {
     availableBalance: totalEarned - totalPaidOut - pendingPayoutAmount,
   };
 }
+
+exports.calculateAgentCommissions = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (!["GET", "POST"].includes(req.method)) { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const requestedAgentId = String(req.query?.agentId || req.body?.agentId || authUser.uid || "").trim();
+    if (!requestedAgentId) { sendJson(req, res, 400, { message: "Agent ID is required." }); return; }
+    if (requestedAgentId !== authUser.uid) {
+      const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get();
+      if (!memberSnap.exists || String(memberSnap.data()?.role || "").toUpperCase() !== "ADMIN") {
+        sendJson(req, res, 403, { message: "You can only view your own commission summary." });
+        return;
+      }
+    }
+
+    const nowMs = Date.now();
+    const snap = await db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("agentId", "==", requestedAgentId)
+      .where("eventType", "==", "agent_commission")
+      .where("status", "==", "recorded")
+      .get();
+
+    let lockedAmount = 0;
+    let unlockedAmount = 0;
+    snap.forEach((doc) => {
+      const event = doc.data() || {};
+      const commissionAmount = Math.max(0, Math.round(Number(event.agentCommissionAmount || event.amount || 0)));
+      const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
+      if (lockExpiresMs > nowMs) lockedAmount += commissionAmount;
+      else unlockedAmount += commissionAmount;
+    });
+
+    sendJson(req, res, 200, {
+      ok: true,
+      agentId: requestedAgentId,
+      totalUnpaidCommissions: lockedAmount + unlockedAmount,
+      lockedAmount,
+      unlockedAmount,
+      eventCount: snap.size,
+      asOf: nowIso(),
+    });
+  } catch (error) {
+    logger.error("calculateAgentCommissions failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to calculate commissions." });
+  }
+});
 
 function resolveMemberSubscriptionDate(memberData) {
   const paidUntil = String(memberData?.paidUntil || "").trim();
@@ -2568,7 +2807,274 @@ exports.adminProcessPayout = onRequest({ region: "us-central1" }, async (req, re
   }
 });
 
-// ── Admin: Reset Agent Password ──
+// Admin: Process Refund
+exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    if (!isRazorpayConfigured()) {
+      sendJson(req, res, 503, { message: "Payment refunds are not configured yet." });
+      return;
+    }
+
+    const memberId = String(req.body?.memberId || "").trim();
+    const orderId = String(req.body?.orderId || "").trim();
+    const reason = String(req.body?.reason || "admin_cancel").trim() || "admin_cancel";
+    const requestedAmount = Number(req.body?.amount || 0);
+    if (!orderId) { sendJson(req, res, 400, { message: "Order ID is required." }); return; }
+
+    const originalSnap = await db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("orderId", "==", orderId)
+      .where("eventType", "==", "membership_paid")
+      .limit(1)
+      .get();
+    if (originalSnap.empty) { sendJson(req, res, 404, { message: "Original membership revenue event not found." }); return; }
+    const originalDoc = originalSnap.docs[0];
+    const originalEvent = originalDoc.data() || {};
+    if (memberId && String(originalEvent.memberId || "") !== memberId) {
+      sendJson(req, res, 400, { message: "Order does not belong to the provided member." });
+      return;
+    }
+
+    const existingRefundSnap = await db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("relatedEventId", "==", originalDoc.id)
+      .where("eventType", "==", "refund_issued")
+      .limit(1)
+      .get();
+    if (!existingRefundSnap.empty) {
+      sendJson(req, res, 409, { message: "A refund has already been recorded for this order." });
+      return;
+    }
+
+    const originalAmount = Math.max(0, Math.round(Number(originalEvent.amount || 0)));
+    const refundAmount = Math.min(originalAmount, Math.round(Number.isFinite(requestedAmount) && requestedAmount > 0 ? requestedAmount : originalAmount));
+    const paymentId = String(originalEvent.paymentId || "").trim();
+    if (!paymentId) { sendJson(req, res, 400, { message: "Original payment ID is missing." }); return; }
+    if (refundAmount <= 0) { sendJson(req, res, 400, { message: "Refund amount must be greater than zero." }); return; }
+
+    const lockExpiresMs = parseTimestampMs(originalEvent.lockExpiresAt);
+    const lockActive = lockExpiresMs ? lockExpiresMs > Date.now() : originalEvent.isLocked === true;
+    const originalCommissionAmount = Math.max(0, Math.round(Number(originalEvent.agentCommissionAmount || 0)));
+    const agentId = String(originalEvent.agentId || "").trim();
+    let commissionDoc = null;
+    if (lockActive && agentId && originalCommissionAmount > 0) {
+      const commissionSnap = await db.collection(REVENUE_EVENTS_COLLECTION)
+        .where("relatedEventId", "==", originalDoc.id)
+        .where("eventType", "==", "agent_commission")
+        .where("agentId", "==", agentId)
+        .limit(1)
+        .get();
+      commissionDoc = commissionSnap.empty ? null : commissionSnap.docs[0];
+    }
+
+    const refund = await createRazorpayRefund(paymentId, refundAmount, {
+      memberId: String(originalEvent.memberId || ""),
+      orderId,
+      reason,
+      processedBy: adminUser.uid,
+    });
+
+    const refundEventId = safeRevenueEventId("refund_issued", refund.id || `${paymentId}_${Date.now()}`);
+    const clawbackAmount = lockActive && agentId ? originalCommissionAmount : 0;
+    const clawbackEventId = clawbackAmount > 0 ? safeRevenueEventId("commission_clawback", refund.id || `${paymentId}_${Date.now()}`) : "";
+    const originalMetadata = originalEvent.metadata || {};
+    const baseMetadata = {
+      memberTier: normalizeRevenueMemberTier({ memberTier: originalMetadata.memberTier }, originalMetadata.memberTier),
+      planDurationDays: Math.max(0, Math.round(Number(originalMetadata.planDurationDays || 0))),
+      basePrice: Math.max(0, Math.round(Number(originalMetadata.basePrice || 0))),
+      discountApplied: Math.max(0, Math.round(Number(originalMetadata.discountApplied || 0))),
+      paymentGateway: "razorpay",
+      notes: String(req.body?.notes || `Refund issued: ${reason}`),
+    };
+
+    await db.runTransaction(async (transaction) => {
+      const freshOriginal = await transaction.get(originalDoc.ref);
+      if (!freshOriginal.exists) {
+        const err = new Error("Original membership revenue event not found.");
+        err.status = 404;
+        throw err;
+      }
+      transaction.create(db.collection(REVENUE_EVENTS_COLLECTION).doc(refundEventId), {
+        eventType: "refund_issued",
+        memberId: String(originalEvent.memberId || ""),
+        amount: -refundAmount,
+        currency: "INR",
+        orderId,
+        paymentId,
+        agentId,
+        agentCommissionRate: Number(originalEvent.agentCommissionRate || 0),
+        agentCommissionAmount: 0,
+        refundReason: reason,
+        relatedEventId: originalDoc.id,
+        lockExpiresAt: null,
+        isLocked: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdBy: adminUser.uid,
+        metadata: {
+          ...baseMetadata,
+          razorpayRefundId: String(refund.id || ""),
+        },
+        status: "recorded",
+        version: REVENUE_SCHEMA_VERSION,
+      });
+
+      if (clawbackAmount > 0) {
+        transaction.create(db.collection(REVENUE_EVENTS_COLLECTION).doc(clawbackEventId), {
+          eventType: "commission_clawback",
+          memberId: String(originalEvent.memberId || ""),
+          amount: -clawbackAmount,
+          currency: "INR",
+          orderId: "",
+          paymentId: "",
+          agentId,
+          agentCommissionRate: Number(originalEvent.agentCommissionRate || 0),
+          agentCommissionAmount: -clawbackAmount,
+          refundReason: reason,
+          relatedEventId: originalDoc.id,
+          lockExpiresAt: null,
+          isLocked: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdBy: adminUser.uid,
+          metadata: {
+            ...baseMetadata,
+            notes: String(req.body?.notes || `Commission clawback for refund: ${reason}`),
+            originalCommissionEventId: commissionDoc?.id || "",
+            razorpayRefundId: String(refund.id || ""),
+          },
+          status: "recorded",
+          version: REVENUE_SCHEMA_VERSION,
+        });
+        if (commissionDoc) transaction.update(commissionDoc.ref, { status: "disputed" });
+      }
+    });
+
+    sendJson(req, res, 200, {
+      ok: true,
+      refundId: String(refund.id || ""),
+      refundEventId,
+      clawbackEventId,
+      status: String(refund.status || "processed"),
+      lockActive,
+      refundedAmount: refundAmount,
+      clawbackAmount,
+    });
+  } catch (error) {
+    logger.error("processRefund failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to process refund." });
+  }
+});
+
+// Admin: Backfill Revenue Events
+exports.adminBackfillRevenueEvents = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const dryRun = req.body?.dryRun !== false;
+    const limit = Math.max(0, Math.min(10000, parseInt(req.body?.limit ?? req.query?.limit ?? 0, 10) || 0));
+    const snap = await db.collection(MEMBERS_COLLECTION).get();
+    let batch = db.batch();
+    let pendingWrites = 0;
+    let scanned = 0;
+    let createdMembershipEvents = 0;
+    let createdCommissionEvents = 0;
+    let skippedExisting = 0;
+    let skippedUnpaid = 0;
+    let skippedInvalidAmount = 0;
+
+    async function flushBatch(force) {
+      if (!pendingWrites || (!force && pendingWrites < 400)) return;
+      await batch.commit();
+      batch = db.batch();
+      pendingWrites = 0;
+    }
+
+    for (const doc of snap.docs) {
+      if (limit && scanned >= limit) break;
+      scanned++;
+      const memberData = doc.data() || {};
+      const paidAtMs = parseTimestampMs(memberData.paidAt || memberData.lastPaymentAt);
+      if (!paidAtMs) {
+        skippedUnpaid++;
+        continue;
+      }
+      const amount = Math.max(0, Math.round(Number(memberData.lastPaymentAmount || 0)));
+      if (amount <= 0) {
+        skippedInvalidAmount++;
+        continue;
+      }
+
+      const paymentId = String(memberData.lastPaymentId || memberData.paymentId || "").trim();
+      const orderId = String(memberData.lastOrderId || memberData.razorpayOrderId || memberData.orderId || "").trim();
+      const agentInfo = await resolveRevenueAgentForMember(memberData);
+      const events = buildMembershipRevenueEvents({
+        memberId: doc.id,
+        memberData: {
+          ...memberData,
+          paidAt: revenueTimestampFromMs(paidAtMs),
+          lastPaymentAmount: amount,
+        },
+        orderData: {
+          amountInr: amount,
+          plan: memberData.plan || memberData.pendingPlan || "",
+          planName: memberData.planName || "",
+          basePrice: computeRevenueBasePrice(amount, {}, memberData),
+          discountApplied: Number(memberData.discountApplied || 0),
+        },
+        orderId,
+        paymentId,
+        agentInfo,
+        createdBy: "system_backfill",
+        createdAt: revenueTimestampFromMs(paidAtMs),
+        notes: `Backfilled membership payment for ${memberData.name || memberData.fullName || doc.id}`,
+      });
+
+      const membershipRef = db.collection(REVENUE_EVENTS_COLLECTION).doc(events.membershipEventId);
+      const commissionRef = events.commissionEvent ? db.collection(REVENUE_EVENTS_COLLECTION).doc(events.commissionEventId) : null;
+      const existingSnaps = await Promise.all([
+        membershipRef.get(),
+        commissionRef ? commissionRef.get() : Promise.resolve(null),
+      ]);
+      if (existingSnaps[0].exists || existingSnaps[1]?.exists) {
+        skippedExisting++;
+        continue;
+      }
+
+      createdMembershipEvents++;
+      if (events.commissionEvent) createdCommissionEvents++;
+      if (dryRun) continue;
+
+      batch.create(membershipRef, events.membershipEvent);
+      pendingWrites++;
+      if (events.commissionEvent) {
+        batch.create(commissionRef, events.commissionEvent);
+        pendingWrites++;
+      }
+      await flushBatch(false);
+    }
+    await flushBatch(true);
+
+    sendJson(req, res, 200, {
+      ok: true,
+      dryRun,
+      scanned,
+      createdMembershipEvents,
+      createdCommissionEvents,
+      skippedExisting,
+      skippedUnpaid,
+      skippedInvalidAmount,
+      createdBy: adminUser.uid,
+    });
+  } catch (error) {
+    logger.error("adminBackfillRevenueEvents failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to backfill revenue events." });
+  }
+});
+
+// Admin: Reset Agent Password
 exports.adminResetAgentPassword = onRequest({ region: "us-central1" }, async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") { res.status(204).send(""); return; }

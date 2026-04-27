@@ -305,6 +305,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /revenueEvents/{eventId} {
+      allow read: if signedIn() &&
+        (resource.data.memberId == request.auth.uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['recorded', 'settled', 'disputed'];
+      allow delete: if false;
+    }
+
     match /verificationRequests/{requestId} {
       allow create: if signedIn() &&
         request.resource.data.memberUid == request.auth.uid &&
