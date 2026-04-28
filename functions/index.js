@@ -1,5 +1,6 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { FieldValue, Timestamp } = require("firebase-admin/firestore");
@@ -26,6 +27,9 @@ const PAYMENT_ORDERS_COLLECTION = "paymentOrders";
 const PAYMENTS_COLLECTION = "payments";
 const REVENUE_EVENTS_COLLECTION = "revenueEvents";
 const COMPLAINTS_COLLECTION = "complaints";
+const PENDING_ACTIVATIONS_COLLECTION = "pendingActivations";
+const ADMIN_ALERTS_COLLECTION = "adminAlerts";
+const PAYMENT_RECONCILIATION_RUNS_COLLECTION = "paymentReconciliationRuns";
 const REVENUE_SCHEMA_VERSION = 1;
 const REVENUE_LOCK_DAYS = 30;
 const REVENUE_LOCK_MS = REVENUE_LOCK_DAYS * 24 * 60 * 60 * 1000;
@@ -1401,6 +1405,535 @@ async function createRazorpayOrder(params) {
   return payload;
 }
 
+async function fetchRazorpayJson(path) {
+  if (!isRazorpayConfigured()) {
+    const error = new Error("Razorpay credentials are not configured.");
+    error.status = 503;
+    throw error;
+  }
+  const cleanPath = String(path || "").replace(/^\/+/, "");
+  const response = await fetch(`https://api.razorpay.com/v1/${cleanPath}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${razorpayKeyId()}:${razorpayKeySecret()}`).toString("base64")}`,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload?.error?.description || "Unable to read Razorpay payment status.");
+    error.status = 502;
+    throw error;
+  }
+  return payload;
+}
+
+async function fetchRazorpayPayment(paymentId) {
+  const id = String(paymentId || "").trim();
+  if (!id) return null;
+  return fetchRazorpayJson(`payments/${encodeURIComponent(id)}`);
+}
+
+async function fetchRazorpayOrderPayments(orderId) {
+  const id = String(orderId || "").trim();
+  if (!id) return [];
+  const payload = await fetchRazorpayJson(`orders/${encodeURIComponent(id)}/payments`);
+  return Array.isArray(payload?.items) ? payload.items : [];
+}
+
+function isCapturedRazorpayPayment(payment) {
+  const status = String(payment?.status || "").toLowerCase();
+  return status === "captured" || payment?.captured === true;
+}
+
+function razorpayPaymentMatchesOrder(payment, orderData, orderId) {
+  if (!payment) return false;
+  const expectedOrderId = String(orderId || orderData?.razorpayOrderId || "").trim();
+  const paymentOrderId = String(payment.order_id || payment.orderId || "").trim();
+  if (expectedOrderId && paymentOrderId && paymentOrderId !== expectedOrderId) return false;
+  const expectedCurrency = String(orderData?.currency || "INR").toUpperCase();
+  const paymentCurrency = String(payment.currency || "INR").toUpperCase();
+  if (paymentCurrency !== expectedCurrency) return false;
+  const expectedPaise = Math.max(0, Math.round(Number(orderData?.amountInr || 0) * 100));
+  const actualPaise = Math.max(0, Math.round(Number(payment.amount || 0)));
+  return !expectedPaise || expectedPaise === actualPaise;
+}
+
+async function findCapturedRazorpayPayment(orderId, orderData, preferredPaymentId) {
+  const preferredId = String(preferredPaymentId || "").trim();
+  if (preferredId) {
+    const payment = await fetchRazorpayPayment(preferredId);
+    if (isCapturedRazorpayPayment(payment) && razorpayPaymentMatchesOrder(payment, orderData, orderId)) return payment;
+  }
+  const payments = await fetchRazorpayOrderPayments(orderId);
+  return payments.find((payment) => (
+    isCapturedRazorpayPayment(payment) &&
+    razorpayPaymentMatchesOrder(payment, orderData, orderId)
+  )) || null;
+}
+
+function paymentRetryDelayMs(retryCount) {
+  const attempt = Math.max(0, Math.min(6, Number(retryCount || 0)));
+  return Math.round(Math.min(6 * 60, Math.pow(2, attempt) * 5) * 60 * 1000);
+}
+
+function serializeAdminDoc(doc) {
+  return { id: doc.id, ...(doc.data() || {}) };
+}
+
+async function writeAdminAlert(params) {
+  const type = String(params?.type || "payment_alert").trim();
+  const relatedId = String(params?.relatedId || params?.paymentId || params?.orderId || Date.now()).trim();
+  const ref = db.collection(ADMIN_ALERTS_COLLECTION).doc(safeRevenueEventId(type, `${relatedId}_${Date.now()}`));
+  await ref.set({
+    type,
+    severity: String(params?.severity || "warning").trim(),
+    title: String(params?.title || "Payment attention required").trim(),
+    message: String(params?.message || "").trim(),
+    status: "open",
+    source: String(params?.source || "system").trim(),
+    memberId: String(params?.memberId || params?.uid || "").trim(),
+    orderId: String(params?.orderId || "").trim(),
+    paymentId: String(params?.paymentId || "").trim(),
+    relatedCollection: String(params?.relatedCollection || "").trim(),
+    relatedId,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return ref.id;
+}
+
+async function writePendingActivation(params) {
+  const paymentId = String(params?.paymentId || "").trim();
+  const orderId = String(params?.orderId || "").trim();
+  if (!paymentId || !orderId) {
+    const error = new Error("Pending activation requires paymentId and orderId.");
+    error.status = 400;
+    throw error;
+  }
+  const ref = db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(paymentId);
+  const orderSnap = await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get();
+  const orderData = orderSnap.exists ? (orderSnap.data() || {}) : {};
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const existing = snap.exists ? (snap.data() || {}) : {};
+    const retryCount = Math.max(0, Number(existing.retryCount || 0));
+    const status = String(existing.status || "").toLowerCase() === "completed" ? "completed" : "pending";
+    const payload = {
+      uid: String(params.uid || orderData.uid || "").trim(),
+      orderId,
+      paymentId,
+      signature: String(params.signature || existing.signature || "").trim(),
+      purchaseType: String(orderData.purchaseType || params.purchaseType || "").trim(),
+      amountInr: Number(orderData.amountInr || params.amountInr || 0),
+      currency: String(orderData.currency || params.currency || "INR").trim(),
+      status,
+      retryCount,
+      nextRetryAt: Timestamp.fromDate(new Date(Date.now() + paymentRetryDelayMs(retryCount))),
+      lastError: String(params.error?.message || params.lastError || "").slice(0, 500),
+      source: String(params.source || "payment_verification").trim(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    if (!snap.exists) payload.createdAt = FieldValue.serverTimestamp();
+    transaction.set(ref, payload, { merge: true });
+  });
+  return ref.id;
+}
+
+async function activateVerifiedPurchase(params) {
+  const uid = String(params?.uid || "").trim();
+  const orderId = String(params?.orderId || "").trim();
+  const paymentId = String(params?.paymentId || "").trim();
+  const signature = String(params?.signature || "").trim();
+  if (!uid || !orderId || !paymentId) {
+    const error = new Error("Payment activation payload is incomplete.");
+    error.status = 400;
+    throw error;
+  }
+  if (!params?.skipSignature && !signature) {
+    const error = new Error("Payment verification payload is incomplete.");
+    error.status = 400;
+    throw error;
+  }
+
+  const orderRef = db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId);
+  const memberRef = db.collection(MEMBERS_COLLECTION).doc(uid);
+  const paymentRef = db.collection(PAYMENTS_COLLECTION).doc(paymentId);
+  const pendingRef = params?.pendingActivationId
+    ? db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(String(params.pendingActivationId))
+    : null;
+  let responsePayload = null;
+
+  await db.runTransaction(async (transaction) => {
+    const reads = [transaction.get(orderRef), transaction.get(memberRef), transaction.get(paymentRef)];
+    if (pendingRef) reads.push(transaction.get(pendingRef));
+    const [orderSnap, memberSnap, existingPaymentSnap] = await Promise.all(reads);
+    if (!orderSnap.exists) {
+      const err = new Error("Payment order not found.");
+      err.status = 404;
+      throw err;
+    }
+    if (!memberSnap.exists) {
+      const err = new Error("Member profile not found.");
+      err.status = 404;
+      throw err;
+    }
+    const orderData = orderSnap.data() || {};
+    if (String(orderData.uid || "") !== uid) {
+      const err = new Error("Order does not belong to this user.");
+      err.status = 403;
+      throw err;
+    }
+    const memberData = memberSnap.data() || {};
+    if (existingPaymentSnap.exists || String(orderData.status || "").toLowerCase() === "paid") {
+      if (pendingRef) {
+        transaction.set(pendingRef, {
+          status: "completed",
+          completedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+          lastRetrySource: String(params.source || "status_check"),
+        }, { merge: true });
+      }
+      responsePayload = {
+        ok: true,
+        alreadyProcessed: true,
+        purchaseType: String(orderData.purchaseType || "membership"),
+        member: { uid, ...memberData },
+      };
+      return;
+    }
+    if (!params?.skipSignature && !verifyRazorpaySignature(orderId, paymentId, signature)) {
+      const err = new Error("Payment verification failed.");
+      err.status = 400;
+      throw err;
+    }
+
+    const purchaseType = String(orderData.purchaseType || "membership").trim().toLowerCase();
+    if (purchaseType === "membership") {
+      const paidAt = nowIso();
+      const agentInfo = await resolveRevenueAgentForMember(memberData, transaction);
+      const updatedMember = {
+        plan: String(orderData.plan || memberData.pendingPlan || "paid"),
+        planName: String(params.requestBody?.planName || orderData.planName || orderData.plan || ""),
+        tier: "paid",
+        isPaid: true,
+        pendingPlan: "",
+        pendingPaymentOrderId: "",
+        lastOrderId: orderId,
+        lastPaymentId: paymentId,
+        lastPaymentAt: paidAt,
+        lastPaymentAmount: Number(orderData.amountInr || 0),
+        paymentGateway: "razorpay",
+        paymentCurrency: String(orderData.currency || "INR"),
+        paymentStatus: "paid",
+        paidAt,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      const revenueEvents = buildMembershipRevenueEvents({
+        memberId: uid,
+        memberData: { ...memberData, ...updatedMember },
+        orderData,
+        orderId,
+        paymentId,
+        agentInfo,
+        ipAddress: params.ipAddress || "",
+        createdBy: "system",
+      });
+      transaction.set(memberRef, updatedMember, { merge: true });
+      transaction.create(
+        db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.membershipEventId),
+        revenueEvents.membershipEvent
+      );
+      if (revenueEvents.commissionEvent) {
+        transaction.create(
+          db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.commissionEventId),
+          revenueEvents.commissionEvent
+        );
+      }
+      responsePayload = {
+        ok: true,
+        purchaseType: "membership",
+        member: {
+          uid,
+          ...memberData,
+          ...updatedMember,
+          updatedAt: nowIso(),
+        },
+      };
+    } else if (purchaseType === "verification") {
+      const requestId = String(orderData.requestId || "").trim();
+      const verificationType = normalizeVerificationType(orderData.verificationType || "");
+      if (!requestId || !verificationType) {
+        const err = new Error("Verification payment order is incomplete.");
+        err.status = 400;
+        throw err;
+      }
+      const requestRef = db.collection(VERIFICATION_REQUESTS_COLLECTION).doc(requestId);
+      const requestSnap = await transaction.get(requestRef);
+      if (!requestSnap.exists) {
+        const err = new Error("Verification request not found.");
+        err.status = 404;
+        throw err;
+      }
+      const requestData = requestSnap.data() || {};
+      if (String(requestData.memberUid || "") !== uid) {
+        const err = new Error("Verification request does not belong to this user.");
+        err.status = 403;
+        throw err;
+      }
+      transaction.set(requestRef, {
+        amount: Number(orderData.amountInr || 0),
+        paymentStatus: "paid",
+        status: "pending_review",
+        paidAt: nowIso(),
+        lastPaymentId: paymentId,
+        lastPaymentAmount: Number(orderData.amountInr || 0),
+        paymentGateway: "razorpay",
+        paymentCurrency: String(orderData.currency || "INR"),
+        reminderCount: 0,
+        lastReminderAt: "",
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      const verificationStatus = {
+        ...(memberData.verificationStatus || {}),
+        [verificationType]: "pending_review",
+      };
+      transaction.set(memberRef, {
+        verificationStatus,
+        lastOrderId: orderId,
+        lastPaymentId: paymentId,
+        paymentStatus: "paid",
+        pendingPaymentOrderId: "",
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      responsePayload = {
+        ok: true,
+        purchaseType: "verification",
+        verificationRequest: {
+          id: requestId,
+          ...requestData,
+          amount: Number(orderData.amountInr || 0),
+          paymentStatus: "paid",
+          status: "pending_review",
+          paidAt: nowIso(),
+          lastPaymentId: paymentId,
+          lastPaymentAmount: Number(orderData.amountInr || 0),
+          paymentGateway: "razorpay",
+          paymentCurrency: String(orderData.currency || "INR"),
+        },
+      };
+    } else {
+      const err = new Error("Unsupported purchase type for payment verification.");
+      err.status = 400;
+      throw err;
+    }
+
+    transaction.set(orderRef, {
+      status: "paid",
+      paymentId,
+      verifiedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      recoverySource: String(params.source || "member_verify"),
+    }, { merge: true });
+    transaction.set(paymentRef, {
+      uid,
+      orderId,
+      paymentId,
+      gateway: "razorpay",
+      signature,
+      purchaseType,
+      plan: String(orderData.plan || ""),
+      requestId: String(orderData.requestId || ""),
+      verificationType: String(orderData.verificationType || ""),
+      amountInr: Number(orderData.amountInr || 0),
+      currency: String(orderData.currency || "INR"),
+      status: "paid",
+      gatewayStatus: String(params.gatewayPayment?.status || ""),
+      gatewayCapturedAt: params.gatewayPayment?.created_at
+        ? Timestamp.fromMillis(Number(params.gatewayPayment.created_at) * 1000)
+        : null,
+      createdAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    if (pendingRef) {
+      transaction.set(pendingRef, {
+        status: "completed",
+        completedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        lastRetrySource: String(params.source || "status_check"),
+      }, { merge: true });
+    }
+  });
+
+  return responsePayload || { ok: true };
+}
+
+async function recordPendingActivationFailure(params) {
+  const pendingActivationId = await writePendingActivation(params);
+  await writeAdminAlert({
+    type: "payment_activation_failed",
+    severity: "critical",
+    title: "Payment captured but service activation is pending",
+    message: String(params.error?.message || "A payment reached Parichayam but activation failed. Retry from Payment Alerts."),
+    memberId: params.uid,
+    orderId: params.orderId,
+    paymentId: params.paymentId,
+    relatedCollection: PENDING_ACTIVATIONS_COLLECTION,
+    relatedId: pendingActivationId,
+    source: params.source || "member_verify",
+  });
+  return pendingActivationId;
+}
+
+async function retryPendingActivationDoc(doc, source) {
+  const pending = doc.data() || {};
+  const status = String(pending.status || "").toLowerCase();
+  if (status === "completed") return { id: doc.id, skipped: true, reason: "already_completed" };
+  const orderId = String(pending.orderId || "").trim();
+  const paymentId = String(pending.paymentId || doc.id).trim();
+  const uid = String(pending.uid || "").trim();
+  if (!orderId || !paymentId || !uid) {
+    await doc.ref.set({
+      status: "needs_admin",
+      lastError: "Pending activation is missing uid, orderId, or paymentId.",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { id: doc.id, ok: false, needsAdmin: true };
+  }
+
+  await doc.ref.set({
+    status: "retrying",
+    lastRetryAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  try {
+    const orderSnap = await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get();
+    if (!orderSnap.exists) {
+      const error = new Error("Payment order is missing for pending activation.");
+      error.status = 404;
+      throw error;
+    }
+    const orderData = orderSnap.data() || {};
+    const payment = await findCapturedRazorpayPayment(orderId, orderData, paymentId);
+    if (!payment) {
+      await doc.ref.set({
+        status: "waiting_gateway",
+        lastError: "No captured Razorpay payment found yet.",
+        retryCount: Number(pending.retryCount || 0),
+        nextRetryAt: Timestamp.fromDate(new Date(Date.now() + paymentRetryDelayMs(Number(pending.retryCount || 0)))),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return { id: doc.id, ok: false, waitingGateway: true };
+    }
+    const result = await activateVerifiedPurchase({
+      uid,
+      orderId,
+      paymentId: String(payment.id || paymentId),
+      signature: String(pending.signature || ""),
+      skipSignature: true,
+      gatewayPayment: payment,
+      source: source || "retry_queue",
+      pendingActivationId: doc.id,
+    });
+    return { id: doc.id, ok: true, result };
+  } catch (error) {
+    const retryCount = Math.max(0, Number(pending.retryCount || 0)) + 1;
+    const needsAdmin = retryCount >= 8 || (error.status && error.status < 500);
+    await doc.ref.set({
+      status: needsAdmin ? "needs_admin" : "retry_failed",
+      retryCount,
+      lastError: String(error.message || error).slice(0, 500),
+      nextRetryAt: Timestamp.fromDate(new Date(Date.now() + paymentRetryDelayMs(retryCount))),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    if (needsAdmin) {
+      await writeAdminAlert({
+        type: "payment_activation_needs_admin",
+        severity: "critical",
+        title: "Payment activation needs manual review",
+        message: String(error.message || "Retry queue could not activate a captured payment."),
+        memberId: uid,
+        orderId,
+        paymentId,
+        relatedCollection: PENDING_ACTIVATIONS_COLLECTION,
+        relatedId: doc.id,
+        source: source || "retry_queue",
+      });
+    }
+    return { id: doc.id, ok: false, error: error.message || String(error), needsAdmin };
+  }
+}
+
+async function runPaymentReconciliation(params = {}) {
+  const limit = Math.max(1, Math.min(200, parseInt(params.limit || 100, 10) || 100));
+  const source = String(params.source || "manual").trim();
+  const createdSnap = await db.collection(PAYMENT_ORDERS_COLLECTION)
+    .where("status", "==", "created")
+    .limit(limit)
+    .get();
+  const result = {
+    ok: true,
+    source,
+    scanned: 0,
+    capturedFound: 0,
+    activated: 0,
+    pendingCreated: 0,
+    skippedRecent: 0,
+    errors: [],
+  };
+  const cutoffMs = Date.now() - (5 * 60 * 1000);
+  for (const orderDoc of createdSnap.docs) {
+    const order = orderDoc.data() || {};
+    const createdMs = parseTimestampMs(order.createdAt);
+    if (createdMs && createdMs > cutoffMs) {
+      result.skippedRecent++;
+      continue;
+    }
+    result.scanned++;
+    try {
+      const payment = await findCapturedRazorpayPayment(orderDoc.id, order, order.paymentId || "");
+      if (!payment) continue;
+      result.capturedFound++;
+      const pendingId = await writePendingActivation({
+        uid: String(order.uid || ""),
+        orderId: orderDoc.id,
+        paymentId: String(payment.id || ""),
+        purchaseType: String(order.purchaseType || ""),
+        amountInr: Number(order.amountInr || 0),
+        currency: String(order.currency || "INR"),
+        source: `reconciliation_${source}`,
+        lastError: "Captured payment found during reconciliation before activation.",
+      });
+      result.pendingCreated++;
+      const retryResult = await retryPendingActivationDoc(
+        await db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(pendingId).get(),
+        `reconciliation_${source}`
+      );
+      if (retryResult.ok) result.activated++;
+    } catch (error) {
+      result.errors.push({
+        orderId: orderDoc.id,
+        message: String(error.message || error).slice(0, 300),
+      });
+      await writeAdminAlert({
+        type: "payment_reconciliation_error",
+        severity: "warning",
+        title: "Payment reconciliation error",
+        message: String(error.message || error),
+        memberId: String(order.uid || ""),
+        orderId: orderDoc.id,
+        paymentId: String(order.paymentId || ""),
+        source,
+      });
+    }
+  }
+  const runRef = await db.collection(PAYMENT_RECONCILIATION_RUNS_COLLECTION).add({
+    ...result,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  result.runId = runRef.id;
+  return result;
+}
+
 function verifyRazorpaySignature(orderId, paymentId, signature) {
   const expected = crypto
     .createHmac("sha256", razorpayKeySecret())
@@ -2182,6 +2715,12 @@ exports.createPaymentOrder = onRequest({ region: "us-central1" }, async (req, re
       updatedAt: FieldValue.serverTimestamp(),
     };
     await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderDoc.razorpayOrderId).set(orderDoc, { merge: true });
+    await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).set({
+      pendingPaymentOrderId: orderDoc.razorpayOrderId,
+      lastOrderId: orderDoc.razorpayOrderId,
+      paymentStatus: "pending",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
     sendJson(req, res, 200, {
       ok: true,
       gateway: "razorpay",
@@ -2210,16 +2749,20 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
     sendJson(req, res, 405, { message: "Method not allowed." });
     return;
   }
+  let authUser = null;
+  let orderId = "";
+  let paymentId = "";
+  let signature = "";
   try {
-    const authUser = await verifyAuthenticatedUser(req);
+    authUser = await verifyAuthenticatedUser(req);
     await enforceAuthRateLimit("verifyPaymentAndActivateMembership:uid", authUser.uid, 40, 60 * 60 * 1000, "Too many verification attempts. Please try again later.");
     if (!isRazorpayConfigured()) {
       sendJson(req, res, 503, { message: "Payment verification is not configured yet." });
       return;
     }
-    const orderId = String(req.body?.razorpay_order_id || req.body?.orderId || "").trim();
-    const paymentId = String(req.body?.razorpay_payment_id || req.body?.paymentId || "").trim();
-    const signature = String(req.body?.razorpay_signature || req.body?.signature || "").trim();
+    orderId = String(req.body?.razorpay_order_id || req.body?.orderId || "").trim();
+    paymentId = String(req.body?.razorpay_payment_id || req.body?.paymentId || "").trim();
+    signature = String(req.body?.razorpay_signature || req.body?.signature || "").trim();
     if (!orderId || !paymentId || !signature) {
       sendJson(req, res, 400, { message: "Payment verification payload is incomplete." });
       return;
@@ -2277,6 +2820,8 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
           tier: "paid",
           isPaid: true,
           pendingPlan: "",
+          pendingPaymentOrderId: "",
+          lastOrderId: orderId,
           lastPaymentId: paymentId,
           lastPaymentAt: paidAt,
           lastPaymentAmount: Number(orderData.amountInr || 0),
@@ -2357,6 +2902,10 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
         };
         transaction.set(memberRef, {
           verificationStatus,
+          pendingPaymentOrderId: "",
+          lastOrderId: orderId,
+          lastPaymentId: paymentId,
+          paymentStatus: "paid",
           updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
         responsePayload = {
@@ -2404,8 +2953,282 @@ exports.verifyPaymentAndActivateMembership = onRequest({ region: "us-central1" }
     });
     sendJson(req, res, 200, responsePayload || { ok: true });
   } catch (error) {
+    const canQueueForRetry = authUser?.uid &&
+      orderId &&
+      paymentId &&
+      signature &&
+      isRazorpayConfigured() &&
+      (!error.status || Number(error.status) >= 500) &&
+      verifyRazorpaySignature(orderId, paymentId, signature);
+    if (canQueueForRetry) {
+      try {
+        const pendingActivationId = await recordPendingActivationFailure({
+          uid: authUser.uid,
+          orderId,
+          paymentId,
+          signature,
+          error,
+          source: "member_verify_failed",
+        });
+        sendJson(req, res, 202, {
+          ok: false,
+          pendingActivation: true,
+          pendingActivationId,
+          message: "Payment received. Activation is queued for automatic recovery and the team has been alerted.",
+        });
+        return;
+      } catch (queueError) {
+        logger.error("verifyPaymentAndActivateMembership recovery queue failed", queueError);
+      }
+    }
     logger.error("verifyPaymentAndActivateMembership failed", error);
     sendJson(req, res, error.status || 500, { message: error.message || "Unable to verify payment right now." });
+  }
+});
+
+exports.checkPaymentStatus = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get();
+    const memberData = memberSnap.exists ? (memberSnap.data() || {}) : {};
+    let orderId = String(req.body?.orderId || req.body?.razorpay_order_id || memberData.pendingPaymentOrderId || memberData.lastOrderId || "").trim();
+    let paymentId = String(req.body?.paymentId || req.body?.razorpay_payment_id || memberData.lastPaymentId || "").trim();
+    if (!orderId && !paymentId) {
+      sendJson(req, res, 200, {
+        ok: true,
+        status: "none",
+        message: "No recent online payment was found for this account.",
+      });
+      return;
+    }
+
+    let orderData = null;
+    if (orderId) {
+      const orderSnap = await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get();
+      if (!orderSnap.exists) {
+        sendJson(req, res, 404, { message: "Payment order not found." });
+        return;
+      }
+      orderData = orderSnap.data() || {};
+      if (String(orderData.uid || "") !== authUser.uid) {
+        sendJson(req, res, 403, { message: "This payment order does not belong to your account." });
+        return;
+      }
+      if (!paymentId) paymentId = String(orderData.paymentId || "").trim();
+    }
+
+    const paymentSnap = paymentId ? await db.collection(PAYMENTS_COLLECTION).doc(paymentId).get() : null;
+    const pendingSnap = paymentId ? await db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(paymentId).get() : null;
+    if (paymentSnap?.exists || String(orderData?.status || "").toLowerCase() === "paid") {
+      sendJson(req, res, 200, {
+        ok: true,
+        status: "paid",
+        orderId,
+        paymentId,
+        localPayment: paymentSnap?.exists ? serializeAdminDoc(paymentSnap) : null,
+        pendingActivation: pendingSnap?.exists ? serializeAdminDoc(pendingSnap) : null,
+      });
+      return;
+    }
+
+    if (!isRazorpayConfigured() || !orderId || !orderData) {
+      sendJson(req, res, 200, {
+        ok: true,
+        status: pendingSnap?.exists ? String(pendingSnap.data()?.status || "pending") : "pending",
+        orderId,
+        paymentId,
+        pendingActivation: pendingSnap?.exists ? serializeAdminDoc(pendingSnap) : null,
+      });
+      return;
+    }
+
+    const capturedPayment = await findCapturedRazorpayPayment(orderId, orderData, paymentId);
+    if (!capturedPayment) {
+      sendJson(req, res, 200, {
+        ok: true,
+        status: "awaiting_gateway_capture",
+        orderId,
+        paymentId,
+        pendingActivation: pendingSnap?.exists ? serializeAdminDoc(pendingSnap) : null,
+      });
+      return;
+    }
+
+    const capturedPaymentId = String(capturedPayment.id || paymentId).trim();
+    try {
+      const result = await activateVerifiedPurchase({
+        uid: authUser.uid,
+        orderId,
+        paymentId: capturedPaymentId,
+        skipSignature: true,
+        gatewayPayment: capturedPayment,
+        source: "member_status_check",
+        pendingActivationId: capturedPaymentId,
+      });
+      sendJson(req, res, 200, {
+        ok: true,
+        status: "paid",
+        activated: true,
+        orderId,
+        paymentId: capturedPaymentId,
+        result,
+      });
+    } catch (activationError) {
+      const pendingActivationId = await recordPendingActivationFailure({
+        uid: authUser.uid,
+        orderId,
+        paymentId: capturedPaymentId,
+        error: activationError,
+        source: "member_status_check_failed",
+      });
+      sendJson(req, res, 202, {
+        ok: false,
+        status: "activation_pending",
+        pendingActivation: true,
+        pendingActivationId,
+        orderId,
+        paymentId: capturedPaymentId,
+        message: "Razorpay shows this payment as captured. Activation is queued for recovery.",
+      });
+    }
+  } catch (error) {
+    logger.error("checkPaymentStatus failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to check payment status right now." });
+  }
+});
+
+exports.retryPendingActivations = onSchedule({
+  schedule: "every 10 minutes",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const now = Date.now();
+  const statuses = ["pending", "retry_failed", "waiting_gateway"];
+  const outcomes = [];
+  for (const status of statuses) {
+    const snap = await db.collection(PENDING_ACTIVATIONS_COLLECTION)
+      .where("status", "==", status)
+      .limit(25)
+      .get();
+    for (const doc of snap.docs) {
+      const pending = doc.data() || {};
+      const nextRetryMs = parseTimestampMs(pending.nextRetryAt) || 0;
+      if (nextRetryMs && nextRetryMs > now) continue;
+      outcomes.push(await retryPendingActivationDoc(doc, "scheduled_retry"));
+    }
+  }
+  logger.info("retryPendingActivations complete", {
+    attempted: outcomes.length,
+    activated: outcomes.filter((item) => item.ok).length,
+  });
+});
+
+exports.dailyReconciliation = onSchedule({
+  schedule: "every day 02:30",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const result = await runPaymentReconciliation({ source: "scheduled", limit: 100 });
+  logger.info("dailyReconciliation complete", result);
+});
+
+exports.adminRunPaymentReconciliation = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    await verifyAdminUser(req);
+    const result = await runPaymentReconciliation({
+      source: "admin_manual",
+      limit: req.body?.limit || 100,
+    });
+    sendJson(req, res, 200, result);
+  } catch (error) {
+    logger.error("adminRunPaymentReconciliation failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to run reconciliation." });
+  }
+});
+
+exports.adminRetryPendingActivation = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    await verifyAdminUser(req);
+    const pendingActivationId = String(req.body?.pendingActivationId || req.body?.paymentId || "").trim();
+    if (!pendingActivationId) { sendJson(req, res, 400, { message: "Pending activation ID is required." }); return; }
+    const doc = await db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(pendingActivationId).get();
+    if (!doc.exists) { sendJson(req, res, 404, { message: "Pending activation not found." }); return; }
+    const result = await retryPendingActivationDoc(doc, "admin_manual_retry");
+    sendJson(req, res, 200, { ok: !!result.ok, result });
+  } catch (error) {
+    logger.error("adminRetryPendingActivation failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to retry activation." });
+  }
+});
+
+exports.adminAcknowledgeAlert = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const alertId = String(req.body?.alertId || "").trim();
+    if (!alertId) { sendJson(req, res, 400, { message: "Alert ID is required." }); return; }
+    await db.collection(ADMIN_ALERTS_COLLECTION).doc(alertId).set({
+      status: "acknowledged",
+      acknowledgedBy: adminUser.uid,
+      acknowledgedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    sendJson(req, res, 200, { ok: true });
+  } catch (error) {
+    logger.error("adminAcknowledgeAlert failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to acknowledge alert." });
+  }
+});
+
+exports.adminListPaymentResilience = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (!["GET", "POST"].includes(req.method)) { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    await verifyAdminUser(req);
+    const [
+      pendingSnap,
+      alertsSnap,
+      paymentsSnap,
+      ordersSnap,
+      refundSnap,
+      clawbackSnap,
+      reconciliationSnap,
+    ] = await Promise.all([
+      db.collection(PENDING_ACTIVATIONS_COLLECTION).limit(50).get(),
+      db.collection(ADMIN_ALERTS_COLLECTION).limit(50).get(),
+      db.collection(PAYMENTS_COLLECTION).limit(50).get(),
+      db.collection(PAYMENT_ORDERS_COLLECTION).limit(50).get(),
+      db.collection(REVENUE_EVENTS_COLLECTION).where("eventType", "==", "refund_issued").limit(25).get(),
+      db.collection(REVENUE_EVENTS_COLLECTION).where("eventType", "==", "commission_clawback").limit(25).get(),
+      db.collection(PAYMENT_RECONCILIATION_RUNS_COLLECTION).limit(20).get(),
+    ]);
+    sendJson(req, res, 200, {
+      ok: true,
+      pendingActivations: pendingSnap.docs.map(serializeAdminDoc),
+      adminAlerts: alertsSnap.docs.map(serializeAdminDoc),
+      recentPayments: paymentsSnap.docs.map(serializeAdminDoc),
+      paymentOrders: ordersSnap.docs.map(serializeAdminDoc),
+      refunds: [
+        ...refundSnap.docs.map(serializeAdminDoc),
+        ...clawbackSnap.docs.map(serializeAdminDoc),
+      ],
+      reconciliationRuns: reconciliationSnap.docs.map(serializeAdminDoc),
+    });
+  } catch (error) {
+    logger.error("adminListPaymentResilience failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load payment resilience data." });
   }
 });
 

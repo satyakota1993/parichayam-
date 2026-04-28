@@ -810,7 +810,7 @@ body{
 const DEFAULT_SITE_SETTINGS = {
   businessName: 'Parichayam',
   supportPhone: '+91 94401 76078',
-  supportEmail: 'support@parichayam.co.im',
+  supportEmail: 'support@parichayam.co.in',
   upiId: 'parichayam@upi',
   officeLocation: 'Vijayawada, AP',
 };
@@ -1868,6 +1868,25 @@ async function startTrustedRazorpayPayment() {
             razorpay_signature: response.razorpay_signature,
             planName: PLANS[selectedPlanKey]?.name || selectedPlanKey,
           });
+          if (verifyResult?.pendingActivation) {
+            persistPaymentRecord('activation_pending', {
+              gatewayOrderId: response.razorpay_order_id,
+              gatewayPaymentId: response.razorpay_payment_id,
+              gatewaySignature: response.razorpay_signature,
+              verification: verifyResult,
+            });
+            showConfirmation({
+              icon: 'WAIT',
+              title: 'Payment Received',
+              message:
+                '<strong>' + item.name + '</strong><br>' +
+                '<span style="font-size:.76rem;color:var(--gold);">Activation is queued for automatic recovery. You can check status from Dashboard > Settings.</span>',
+              linkHref: 'dashboard.html',
+              linkText: 'Go to Dashboard →',
+            });
+            toast('Payment received. Activation is queued for recovery.', 'warning');
+            return;
+          }
           const record = persistPaymentRecord('paid', {
             gatewayOrderId: response.razorpay_order_id,
             gatewayPaymentId: response.razorpay_payment_id,

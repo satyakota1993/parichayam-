@@ -102,7 +102,7 @@
   const options = Object.assign(
     {
       appUrl: "https://parichayam.co.in",
-      supportEmail: "support@parichayam.co.im",
+      supportEmail: "support@parichayam.co.in",
       supportPhone: "9440176078",
       adminEmails: [],
       functionsRegion: "us-central1",
@@ -479,6 +479,32 @@
       throw buildError(response.status || 500, body.message || "Unable to submit your request right now.", body.code || "contact/submit-failed");
     }
     return body;
+  }
+
+  async function callAuthenticatedFunction(name, payload) {
+    if (!originalFetch) throw buildError(503, "Network requests are not available.", "functions/network-unavailable");
+    const endpoint = getFunctionEndpoint(name);
+    if (!endpoint) throw buildError(503, "Cloud Functions are not configured.", "functions/not-configured");
+    const user = await ensureAuthReady();
+    if (!user) throw buildError(401, "Please sign in again to continue.", "auth/session-required");
+    const token = await user.getIdToken(true);
+    const response = await originalFetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload || {}),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw buildError(response.status || 500, body.message || "Request failed.", body.code || "functions/request-failed");
+    }
+    return body;
+  }
+
+  async function checkPaymentStatus(payload) {
+    return callAuthenticatedFunction("checkPaymentStatus", payload || {});
   }
 
   async function ensureAuthReady() {
@@ -1892,6 +1918,7 @@
     login: apiLogin,
     requestPasswordReset: apiForgotPasswordRequest,
     submitContactForm,
+    checkPaymentStatus,
     signInWithCustomToken,
     completeMembership: apiCompleteMembership,
     bootstrapPage,

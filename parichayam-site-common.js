@@ -1,5 +1,5 @@
 (function () {
-  const SUPPORT_EMAIL = "support@parichayam.co.im";
+  const SUPPORT_EMAIL = "support@parichayam.co.in";
   const PHONE_DISPLAY = "+91 94401 76078";
   const PHONE_LINK = "tel:+919440176078";
   const WHATSAPP_LINK = "https://wa.me/919440176078";

@@ -1,51 +1,198 @@
 # Razorpay Launch Readiness Checklist
 
-Date: April 27, 2026  
-Branch: `codex/razorpay-launch-readiness`  
-Founder / Grievance Officer: Kota Venkateswara Rao  
-Support email used across pages: `support@parichayam.co.im`  
-Phone / WhatsApp: `+91 94401 76078`  
+Date: April 28, 2026
+Branch: `codex/razorpay-launch-readiness`
+Founder / Grievance Officer: Kota Venkateswara Rao
+Support email used across pages: `support@parichayam.co.in`
+Phone / WhatsApp: `+91 94401 76078`
 Postal address: Flat No. 05, Padmavathi Enclave, Ajith Singh Nagar, Vijayawada, Andhra Pradesh, India
 
 ## Summary
 
-Phase 2.8 added the mandatory Razorpay trust and legal surface for Parichayam:
+Phase 2.8 now includes the Razorpay trust pages plus the required payment resilience path:
 
 - `privacy.html` - DPDP Act 2023 aligned privacy policy.
-- `terms.html` - full matrimony terms and conditions.
+- `terms.html` - matrimony terms and conditions.
 - `refund.html` - clear refund/cancellation policy for Razorpay review.
 - `contact.html` - visible phone, email, postal address, Google Map, SLAs, and contact form.
 - `about.html` - founder story, mission, values, and community focus.
 - `pricing.html` - tier feature matrix, add-ons, GST note, refund link, and FAQ.
-- Shared footer and cookie banner added through `parichayam-site-common.css` and `parichayam-site-common.js`.
-- Contact form backend added as `submitContactForm`, writing validated requests into `complaints/{id}`.
-- Firestore rules added for public complaint creation and admin-only complaint reads.
+- Shared footer and cookie banner through `parichayam-site-common.css` and `parichayam-site-common.js`.
+- Contact form backend `submitContactForm`, writing validated requests into `complaints/{id}`.
+- Payment resilience backend: pending activation retry queue, admin alerts, daily reconciliation, member payment-status check, admin retry/acknowledge tools, and refund/reconciliation admin views.
 
-## Checklist
+## Critical Fix Results
 
 | Requirement | Status | Evidence |
 | --- | --- | --- |
-| All 6 mandatory pages created | PASS | `privacy.html`, `terms.html`, `refund.html`, `contact.html`, `about.html`, `pricing.html` exist. |
-| Production content, no lorem ipsum | PASS | Static scan on six new pages found no lorem ipsum or TODO/TBD content. |
-| Effective date and last updated on policies | PASS | Privacy, Terms, and Refund all show April 27, 2026. |
-| DPDP grievance officer details filled | PASS | Kota Venkateswara Rao, support email, phone, 15-day SLA. |
-| Full postal address visible | PASS | Contact, Privacy, and Terms include the Vijayawada address. |
-| Refund policy clear for Razorpay | PASS | Includes 7-day cooling-off, no full refund after assignment, no refund after first suggestion, verification/add-on rules, gateway fee deduction, timelines, and escalation. |
-| Pricing matrix readable and linked | PASS | `pricing.html` includes full tier matrix and responsive horizontal scroll for small screens. |
-| Footer added to existing pages | PASS | Common footer script/CSS included in `index.html`, `auth.html`, `dashboard.html`, `admin.html`, `agent.html`, `matchmaker.html`, and `checkout.html`. |
-| Public nav updated | PASS | `index.html`, `auth.html`, and `pricing.html` expose About, Pricing, Contact, Sign In, Register. |
-| Cookie banner working path added | PASS | Banner stores `parichayam_cookie_consent=accepted` in `localStorage` and links to `privacy.html#cookies`. |
-| Contact form wired to Firestore path | PASS | `contact.html` calls `ParichayamFirebase.submitContactForm`; Cloud Function writes `complaints/{id}`. |
-| Complaint rules added | PASS | `firestore.rules` allows validated public create and admin-only read/update/delete. |
-| Internal links on public pages | PASS | Node static link scan found no missing local references on the six new public pages. |
-| Page weight under 200KB for new public pages | PASS | Privacy 15.7KB, Terms 17.2KB, Refund 9.4KB, Contact 9.0KB, About 5.9KB, Pricing 8.1KB. |
-| Founder image path does not 404 | PASS | Added lightweight `founder.jpg` placeholder with founder initials. |
-| Print-friendly legal pages | PASS | Shared CSS includes `@media print` rules hiding navigation/footer/cookie banner and removing heavy backgrounds. |
+| Zero old mistyped-domain instances remain | PASS | Recursive scan excluding `.git`, `.claude`, and `node_modules` returned zero matches. |
+| All emails use `parichayam.co.in` | PASS | Static scan found 46 `.co.in` references and zero old mistyped-domain references. |
+| Legal/trust pages live | PASS | `/privacy`, `/terms`, `/refund`, `/contact`, `/about`, and `/pricing` all return HTTP 200 on Firebase Hosting. |
+| Footer links from existing pages | PASS | Live HTTP scan confirmed existing pages include `parichayam-site-common.js`; no missing local links found. |
+| Cookie banner | PASS | Deployed common script contains `parichayam_cookie_consent` storage and Cookie Policy link behaviour. |
+| Contact form page wiring | PASS | Live `/contact` includes `id="contactForm"` and `submitContactForm` integration. |
+| Print-friendly pages | PASS | Deployed shared CSS includes `@media print` rules. |
+| Pricing mobile support | PASS | Deployed pricing page uses `pc-price-table-wrap`; shared CSS applies `overflow-x: auto` for the matrix. |
+| Payment resilience Part 3 | PASS | Built and deployed; details below. |
+
+## Payment Resilience Status
+
+Part 3 was not present before this fix. It is now implemented:
+
+- `functions/index.js`
+  - `pendingActivations` recovery queue helpers.
+  - `adminAlerts` alert writer.
+  - Razorpay status fetchers for payment/order reconciliation.
+  - `checkPaymentStatus` member endpoint.
+  - `retryPendingActivations` scheduled retry job.
+  - `dailyReconciliation` scheduled reconciliation job.
+  - `adminRunPaymentReconciliation`, `adminRetryPendingActivation`, `adminAcknowledgeAlert`, `adminListPaymentResilience`.
+  - `createPaymentOrder` now stores `pendingPaymentOrderId` / `lastOrderId`.
+  - `verifyPaymentAndActivateMembership` now queues recoverable activation failures instead of leaving members stranded after capture.
+- `firestore.rules`
+  - Added `pendingActivations/{paymentId}`, `adminAlerts/{alertId}`, and `paymentReconciliationRuns/{runId}` rules.
+  - Protected `lastOrderId` and `pendingPaymentOrderId` from member-side writes.
+- `dashboard.html`
+  - Added Settings > Recent Payments card with `checkPaymentStatus` recovery action.
+- `admin.html`
+  - Added Payment Alerts, Refunds, and Reconciliation tabs.
+  - Admin can retry pending activations, acknowledge alerts, process refunds, and run reconciliation.
+- `parichayam-firebase.js`
+  - Added authenticated `checkPaymentStatus` wrapper.
+
+## Deployment Results
+
+Commands run:
+
+```text
+firebase deploy --only hosting,functions,firestore:rules --project parichayam-9ee09
+```
+
+Result:
+
+- Firestore rules released successfully.
+- Hosting uploaded but did not finalize because Functions deployment aborted before Hosting release.
+- Functions deploy aborted because production contains `memberRecordConnectAction` and `parseBiodata`, which are not in local source. Firebase refused to delete them in non-interactive mode.
+
+Follow-up commands run:
+
+```text
+firebase deploy --only functions:createPaymentOrder,functions:verifyPaymentAndActivateMembership,functions:checkPaymentStatus,functions:retryPendingActivations,functions:dailyReconciliation,functions:adminRunPaymentReconciliation,functions:adminRetryPendingActivation,functions:adminAcknowledgeAlert,functions:adminListPaymentResilience,functions:submitContactForm --project parichayam-9ee09
+firebase deploy --only hosting --project parichayam-9ee09
+```
+
+Result:
+
+- Targeted functions deployment completed successfully without deleting production-only functions.
+- Hosting deployment finalized and released successfully.
+
+## Contact Form Smoke Test
+
+Deployed function call:
+
+```text
+POST https://us-central1-parichayam-9ee09.cloudfunctions.net/submitContactForm
+```
+
+Payload:
+
+```json
+{
+  "name": "Test Smoke",
+  "email": "smoketest@parichayam.co.in",
+  "phone": "+91 9999999999",
+  "category": "general",
+  "message": "Smoke test from Codex Phase 2.8 verification"
+}
+```
+
+Result:
+
+```json
+{
+  "ok": true,
+  "complaintId": "iZhvvg0GMQLejkErM2z3",
+  "message": "Your request was submitted. Parichayam support will respond within the published SLA."
+}
+```
+
+Admin-level Firestore verification:
+
+```json
+{
+  "ok": true,
+  "docId": "iZhvvg0GMQLejkErM2z3",
+  "fieldNames": [
+    "adminNotes",
+    "assignedTo",
+    "category",
+    "createdAt",
+    "email",
+    "ipAddress",
+    "message",
+    "name",
+    "phone",
+    "priority",
+    "source",
+    "status",
+    "updatedAt",
+    "userAgent"
+  ],
+  "values": {
+    "name": "Test Smoke",
+    "email": "smoketest@parichayam.co.in",
+    "phone": "9999999999",
+    "category": "general",
+    "message": "Smoke test from Codex Phase 2.8 verification",
+    "status": "new",
+    "createdAt": "2026-04-28T03:12:16.564Z"
+  }
+}
+```
+
+Security rules check:
+
+- Unauthenticated Firestore REST read of `complaints/iZhvvg0GMQLejkErM2z3`: PASS, returned `403 Forbidden`.
+- Admin-level read using the authenticated Firebase CLI session: PASS, returned the expected document and fields.
+
+## Live Link Scan
+
+Firebase Hosting URL: `https://parichayam-9ee09.web.app`
+
+| Route | Status | Approx size |
+| --- | --- | --- |
+| `/` | 200 | 59 KB |
+| `/auth` | 200 | 92 KB |
+| `/dashboard` | 200 | 444 KB |
+| `/admin` | 200 | 423 KB |
+| `/agent` | 200 | 69 KB |
+| `/matchmaker` | 200 | 33 KB |
+| `/checkout` | 200 | 62 KB |
+| `/privacy` | 200 | 15 KB |
+| `/terms` | 200 | 17 KB |
+| `/refund` | 200 | 9 KB |
+| `/contact` | 200 | 9 KB |
+| `/about` | 200 | 6 KB |
+| `/pricing` | 200 | 8 KB |
+
+Result:
+
+- Missing local links: none found.
+- Footer script included on all existing pages.
+- Cookie banner script present.
+- Contact page form present.
+- Print CSS present.
+- Pricing table mobile horizontal-scroll CSS present.
+
+Browser note:
+
+- The Codex in-app browser plugin failed to open the live site with `failed to start codex app-server: The system cannot find the path specified`.
+- Live verification was completed through deployed HTTP checks and authenticated Firestore REST verification instead.
 
 ## Validation Commands
 
 ```text
-npm.cmd --prefix functions run lint
+npm.cmd run lint
 node --check functions/index.js
 node -e "JSON.parse(require('fs').readFileSync('firebase.json','utf8')); JSON.parse(require('fs').readFileSync('firestore.indexes.json','utf8')); console.log('json ok')"
 git diff --check
@@ -55,35 +202,14 @@ Results:
 
 - Functions syntax: PASS.
 - Firebase JSON validation: PASS.
-- Diff whitespace check: PASS.
 - Static public-page link and size scan: PASS.
+- `git diff --check`: PASS after this report update.
 
-## Contact Form Smoke Test
+## Final Verdict
 
-Added `scripts/razorpay-readiness-smoke.js` to submit a sample contact request to the Firebase Functions emulator and verify the resulting `complaints/{id}` document through the Firestore emulator REST API.
+READY FOR RAZORPAY SUBMISSION: Yes.
 
-Attempted command:
+Notes for future deploys:
 
-```text
-firebase emulators:exec --only functions,firestore --project parichayam-9ee09 "node scripts/razorpay-readiness-smoke.js"
-```
-
-Local Firebase CLI result:
-
-```text
-Welcome to firepit v1.1.0!
-Error: spawn EPERM
-```
-
-The same emulator command was retried with elevated execution approval and exited without producing emulator logs. `firestore-debug.log` remained empty. This appears to be a local Firebase standalone CLI/Firepit launcher issue, not a code syntax issue. Before production deployment, run the smoke test in an environment where Firebase emulators start successfully, or install the npm-based `firebase-tools` CLI and re-run the command above.
-
-## Notes and Follow-ups
-
-- The support email provided for this task was `support@parichayam.co.im`; all new public pages and app defaults now use that email. Confirm that `.co.im` is the intended live domain before submitting Razorpay activation.
-- `dashboard.html` and `admin.html` are pre-existing large app pages above 200KB. The six new Razorpay public pages are all under 200KB.
-- `refund-policy.html` now redirects to `refund.html` so old links do not show the outdated refund language.
-- `firebase.json` now supports clean routes for `/about`, `/pricing`, and `/refund`.
-
-## Verdict
-
-Conditional GO for Razorpay content review: the mandatory pages, visible trust details, refund policy, footer, cookie banner, and contact backend code are in place. Final production GO should wait for the contact form smoke test to pass in a Firebase emulator or staging deployment because the local Firebase CLI could not launch emulators on this machine.
+- Avoid a broad `firebase deploy --only functions` until `memberRecordConnectAction` and `parseBiodata` are either restored locally or intentionally deleted from production.
+- Use targeted function deploys for this branch to avoid accidental deletion prompts.

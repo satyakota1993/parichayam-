@@ -239,6 +239,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="ni" onclick="nav('addons',this)"><span class="ni-i">⚡</span><span class="ni-l">Add-Ons</span></div>
     <div class="ni" onclick="nav('ads',this)"><span class="ni-i">📢</span><span class="ni-l">Advertisements</span><span class="nb nb-o">3</span></div>
     <div class="ni" onclick="nav('agents',this)"><span class="ni-i">🤝</span><span class="ni-l">Agents & Franchise</span><span class="nb nb-r" id="agent-nav-badge" style="display:none">0</span></div>
+    <div class="ni" onclick="nav('alerts',this)"><span class="ni-i">⚠</span><span class="ni-l">Payment Alerts</span></div>
+    <div class="ni" onclick="nav('refunds',this)"><span class="ni-i">↩</span><span class="ni-l">Refunds</span></div>
+    <div class="ni" onclick="nav('reconciliation',this)"><span class="ni-i">↻</span><span class="ni-l">Reconciliation</span></div>
     <div class="ng">Features</div>
     <div class="ni" onclick="nav('dashbuilder',this)"><span class="ni-i">🎛️</span><span class="ni-l">Dashboard Builder</span></div>
     <div class="ni" onclick="nav('formbuilder',this)"><span class="ni-i">📝</span><span class="ni-l">Profile Form Builder</span></div>
@@ -843,6 +846,56 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         </div>
         <div id="gotra-activation-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
         <div style="margin-top:.85rem;font-size:.72rem;color:var(--mu)">💡 After activation, update the member's account from <strong style="color:var(--tx)">User Access Control</strong> to grant the gotraBlock addon flag.</div>
+      </div>
+    </div>
+
+    <!-- PAYMENT RESILIENCE -->
+    <div class="view" id="view-alerts">
+      <div class="card">
+        <div class="card-title">Payment Alerts</div>
+        <div style="background:rgba(201,150,58,.06);border:1px solid var(--bdr);border-radius:8px;padding:.75rem 1rem;font-size:.72rem;color:var(--mu);margin-bottom:1rem;line-height:1.65">
+          Monitor captured payments that need activation recovery. Retry pending activations before contacting the member.
+        </div>
+        <div id="payment-alert-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1rem"></div>
+        <div id="payment-alert-list" style="display:flex;flex-direction:column;gap:.65rem"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-refunds">
+      <div class="card">
+        <div class="card-title">Manual Refunds</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin-bottom:1rem">
+          <div><div class="f-lbl">Member UID</div><input class="f-inp" id="refund-member-id" placeholder="members/{uid}"></div>
+          <div><div class="f-lbl">Razorpay Order ID</div><input class="f-inp" id="refund-order-id" placeholder="order_xxx"></div>
+          <div><div class="f-lbl">Amount (optional)</div><input class="f-inp" id="refund-amount" type="number" min="1" placeholder="Full refund if blank"></div>
+          <div><div class="f-lbl">Reason</div><select class="f-inp" id="refund-reason"><option value="user_requested">User requested</option><option value="admin_cancel">Admin cancel</option><option value="payment_failed">Payment failed</option><option value="fraud_suspected">Fraud suspected</option></select></div>
+        </div>
+        <div><div class="f-lbl">Admin Notes</div><textarea class="f-inp" id="refund-notes" rows="3" placeholder="Reasoning visible in revenueEvents metadata"></textarea></div>
+        <button class="btn-primary" style="margin-top:.85rem" onclick="submitManualRefund()">Process Refund</button>
+        <div id="refund-result" style="margin-top:.85rem;font-size:.72rem;color:var(--mu)"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Refund Ledger Events</div>
+        <div id="recent-refund-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-reconciliation">
+      <div class="card">
+        <div class="card-title">Payment Reconciliation</div>
+        <div style="background:rgba(201,150,58,.06);border:1px solid var(--bdr);border-radius:8px;padding:.75rem 1rem;font-size:.72rem;color:var(--mu);margin-bottom:1rem;line-height:1.65">
+          Checks unpaid payment orders against Razorpay and queues captured payments for activation. A scheduled job runs daily; use manual run after support complaints.
+        </div>
+        <button class="btn-primary" onclick="runManualReconciliation()">Run Reconciliation Now</button>
+        <div id="reconciliation-result" style="margin-top:.85rem;font-size:.72rem;color:var(--mu)"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Payments</div>
+        <div id="recent-payment-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Reconciliation Runs</div>
+        <div id="reconciliation-run-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
       </div>
     </div>
 
@@ -1499,7 +1552,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <div class="card-title">🌐 Contact & Platform Details</div>
           <div class="f-row"><div><div class="f-lbl">WhatsApp / Mobile Number</div><div class="f-sub">Shown on all pages · WhatsApp float button</div></div><input class="f-inp" value="+91 94401 76078" style="width:160px"></div>
           <div class="f-row"><div><div class="f-lbl">Business Name</div><div class="f-sub">Used in checkout and payment receipts</div></div><input class="f-inp" id="site-business-name" value="Parichayam" style="width:180px"></div>
-          <div class="f-row"><div><div class="f-lbl">Email Address</div></div><input class="f-inp" id="site-support-email" value="support@parichayam.co.im" style="width:180px"></div>
+          <div class="f-row"><div><div class="f-lbl">Email Address</div></div><input class="f-inp" id="site-support-email" value="support@parichayam.co.in" style="width:180px"></div>
           <div class="f-row"><div><div class="f-lbl">UPI ID for Payments</div></div><input class="f-inp" id="site-upi-id" value="parichayam@upi" style="width:160px"></div>
           <div class="f-row"><div><div class="f-lbl">Office Address</div></div><input class="f-inp" id="site-office-location" value="Vijayawada, AP" style="width:160px"></div>
           <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bdr)">
@@ -1685,6 +1738,9 @@ const ADMIN_VIEW_META = {
   addons:{ title:'Add-On Pricing', short:'Add-Ons', subtitle:'Tune connects, boosts, kundali packs, and other upsell pricing without hunting across tabs.', keywords:'add-ons addon connects packs boosts upsell pricing' },
   ads:{ title:'Advertisement Management', short:'Ads', subtitle:'Approve advertiser inventory, review slots, and keep revenue placements organized.', keywords:'ads advertisements banners placements advertisers approvals' },
   agents:{ title:'Agents & Franchise', short:'Agents', subtitle:'Monitor agent activity, referrals, payouts, and partner performance by city.', keywords:'agents franchise referral payouts partner cities commissions' },
+  alerts:{ title:'Payment Alerts', short:'Alerts', subtitle:'Recover captured payments that need activation and review urgent support risk.', keywords:'payment alerts pending activations failures captured recovery' },
+  refunds:{ title:'Manual Refunds', short:'Refunds', subtitle:'Issue Razorpay refunds and let the ledger create refund and clawback events.', keywords:'refunds razorpay clawback ledger member order' },
+  reconciliation:{ title:'Payment Reconciliation', short:'Reconcile', subtitle:'Compare pending orders with Razorpay and queue missing activations.', keywords:'reconciliation payments orders razorpay retry queue' },
   dashbuilder:{ title:'Dashboard Builder', short:'Dashboard Builder', subtitle:'Control what members see first and shape the live dashboard experience.', keywords:'dashboard builder widgets layout visibility customer home' },
   formbuilder:{ title:'Profile Form Builder', short:'Form Builder', subtitle:'Adjust registration and profile fields with clearer visibility into required sections.', keywords:'form builder fields registration sections required profile form' },
   features:{ title:'Feature Toggles', short:'Features', subtitle:'Switch live capabilities on or off and keep operational settings in one control room.', keywords:'features toggles settings switches trial kundali visibility' },
@@ -1893,6 +1949,7 @@ function nav(id,el){
   if(id==='customfields') renderCustomFieldsList();
   if(id==='gotramgr') renderGotras();
   if(id==='agents') { loadAgentsView(); }
+  if(id==='alerts' || id==='refunds' || id==='reconciliation') loadPaymentResilienceView(id);
   if(id==='addons') { loadAddonPrices(); loadConnectPacks(); }
   if(id==='admgr' || id==='ads') renderAdList();
   if(id==='profiles') renderProfilesAdminPanel();
@@ -4702,7 +4759,7 @@ async function loadPlanPrices(options = {}) {
 const DEFAULT_SITE_SETTINGS = {
   businessName: 'Parichayam',
   supportPhone: '+91 94401 76078',
-  supportEmail: 'support@parichayam.co.im',
+  supportEmail: 'support@parichayam.co.in',
   upiId: 'parichayam@upi',
   officeLocation: 'Vijayawada, AP',
 };
@@ -6204,6 +6261,180 @@ function _fmtDate(v) {
 
 function _fmtCur(v) {
   return 'Rs. ' + Number(v || 0).toLocaleString('en-IN');
+}
+
+let _paymentResilienceCache = {
+  pendingActivations: [],
+  adminAlerts: [],
+  recentPayments: [],
+  paymentOrders: [],
+  refunds: [],
+  reconciliationRuns: [],
+};
+
+function _resilienceCard(label, value, hint) {
+  return `<div style="background:var(--wh);border:1px solid var(--bdr);border-radius:8px;padding:.8rem">
+    <div style="font-size:.62rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em">${_esc(label)}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--d);margin:.2rem 0">${_esc(value)}</div>
+    <div style="font-size:.68rem;color:var(--mu)">${_esc(hint || '')}</div>
+  </div>`;
+}
+
+function _resilienceRow(title, subtitle, meta, actions) {
+  return `<div style="background:var(--wh);border:1px solid var(--bdr);border-radius:8px;padding:.8rem;display:flex;justify-content:space-between;gap:.85rem;align-items:flex-start;flex-wrap:wrap">
+    <div style="min-width:220px;flex:1">
+      <div style="font-size:.82rem;font-weight:700;color:var(--tx)">${_esc(title)}</div>
+      <div style="font-size:.7rem;color:var(--mu);margin-top:.22rem;line-height:1.55">${_esc(subtitle)}</div>
+      ${meta ? `<div style="font-size:.62rem;color:var(--g);margin-top:.35rem">${_esc(meta)}</div>` : ''}
+    </div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">${actions || ''}</div>
+  </div>`;
+}
+
+function renderPaymentAlerts() {
+  const data = _paymentResilienceCache;
+  const openAlerts = data.adminAlerts.filter(a => String(a.status || 'open') === 'open');
+  const pending = data.pendingActivations.filter(p => String(p.status || '').toLowerCase() !== 'completed');
+  const needsAdmin = pending.filter(p => String(p.status || '').toLowerCase() === 'needs_admin');
+  const summary = document.getElementById('payment-alert-summary');
+  if (summary) {
+    summary.innerHTML = [
+      _resilienceCard('Open alerts', openAlerts.length, 'Admin attention required'),
+      _resilienceCard('Pending activations', pending.length, 'Captured payments awaiting service'),
+      _resilienceCard('Needs admin', needsAdmin.length, 'Retry queue stopped'),
+      _resilienceCard('Recent payments', data.recentPayments.length, 'Local payment ledger docs'),
+    ].join('');
+  }
+  const list = document.getElementById('payment-alert-list');
+  if (!list) return;
+  const rows = [];
+  openAlerts.slice(0, 20).forEach(alert => {
+    rows.push(_resilienceRow(
+      alert.title || alert.type || 'Payment alert',
+      alert.message || '',
+      `Order ${alert.orderId || '-'} · Payment ${alert.paymentId || '-'} · ${_fmtDate(alert.createdAt)}`,
+      `<button class="btn-sm btn-gd" onclick="acknowledgeAdminAlert('${_esc(alert.id)}')">Acknowledge</button>`
+    ));
+  });
+  pending.slice(0, 20).forEach(item => {
+    rows.push(_resilienceRow(
+      `Pending activation: ${item.paymentId || item.id}`,
+      item.lastError || 'Activation has not completed yet.',
+      `Status ${item.status || 'pending'} · Order ${item.orderId || '-'} · Retries ${item.retryCount || 0}`,
+      `<button class="btn-sm btn-gd" onclick="retryPendingActivation('${_esc(item.id)}')">Retry</button>`
+    ));
+  });
+  list.innerHTML = rows.length ? rows.join('') : _resilienceRow('No open payment alerts', 'Retry queue and support alerts are clear.', '', '');
+}
+
+function renderRefundsView() {
+  const list = document.getElementById('recent-refund-list');
+  if (!list) return;
+  const rows = (_paymentResilienceCache.refunds || []).slice(0, 30).map(event => _resilienceRow(
+    `${event.eventType || 'refund'} · ${_fmtCur(event.amount)}`,
+    event.refundReason || event.metadata?.notes || 'Refund ledger entry',
+    `Member ${event.memberId || '-'} · Order ${event.orderId || '-'} · ${_fmtDate(event.createdAt)}`,
+    ''
+  ));
+  list.innerHTML = rows.length ? rows.join('') : _resilienceRow('No refund events yet', 'Refund and clawback ledger events will appear here.', '', '');
+}
+
+function renderReconciliationView() {
+  const payments = document.getElementById('recent-payment-list');
+  if (payments) {
+    const rows = [
+      ...(_paymentResilienceCache.recentPayments || []).map(p => ({ ...p, _kind: 'payment' })),
+      ...(_paymentResilienceCache.paymentOrders || []).map(p => ({ ...p, _kind: 'order' })),
+    ].slice(0, 40).map(item => _resilienceRow(
+      `${item._kind === 'payment' ? 'Payment' : 'Order'} ${item.paymentId || item.razorpayOrderId || item.id}`,
+      `${item.purchaseType || '-'} · ${item.status || '-'} · ${_fmtCur(item.amountInr)}`,
+      `Member ${item.uid || '-'} · ${_fmtDate(item.createdAt || item.updatedAt)}`,
+      ''
+    ));
+    payments.innerHTML = rows.length ? rows.join('') : _resilienceRow('No payment records loaded', 'Recent payments and created orders will appear here.', '', '');
+  }
+  const runs = document.getElementById('reconciliation-run-list');
+  if (runs) {
+    const rows = (_paymentResilienceCache.reconciliationRuns || []).slice(0, 20).map(run => _resilienceRow(
+      `Run ${run.id}`,
+      `Scanned ${run.scanned || 0} · Captured found ${run.capturedFound || 0} · Activated ${run.activated || 0}`,
+      `${run.source || 'manual'} · ${_fmtDate(run.createdAt)}`,
+      ''
+    ));
+    runs.innerHTML = rows.length ? rows.join('') : _resilienceRow('No reconciliation runs yet', 'Run manually or wait for the scheduled daily job.', '', '');
+  }
+}
+
+async function loadPaymentResilienceView(activeTab) {
+  try {
+    const data = await adminCloudFetch('adminListPaymentResilience');
+    _paymentResilienceCache = {
+      pendingActivations: data.pendingActivations || [],
+      adminAlerts: data.adminAlerts || [],
+      recentPayments: data.recentPayments || [],
+      paymentOrders: data.paymentOrders || [],
+      refunds: data.refunds || [],
+      reconciliationRuns: data.reconciliationRuns || [],
+    };
+    renderPaymentAlerts();
+    renderRefundsView();
+    renderReconciliationView();
+  } catch (error) {
+    toast(error.message || 'Unable to load payment resilience data.', 'error');
+  }
+}
+
+async function retryPendingActivation(id) {
+  try {
+    await adminCloudFetch('adminRetryPendingActivation', { body: { pendingActivationId: id } });
+    toast('Pending activation retry attempted.', 'success');
+    await loadPaymentResilienceView('alerts');
+  } catch (error) {
+    toast(error.message || 'Retry failed.', 'error');
+  }
+}
+
+async function acknowledgeAdminAlert(id) {
+  try {
+    await adminCloudFetch('adminAcknowledgeAlert', { body: { alertId: id } });
+    toast('Alert acknowledged.', 'success');
+    await loadPaymentResilienceView('alerts');
+  } catch (error) {
+    toast(error.message || 'Unable to acknowledge alert.', 'error');
+  }
+}
+
+async function submitManualRefund() {
+  const body = {
+    memberId: document.getElementById('refund-member-id')?.value || '',
+    orderId: document.getElementById('refund-order-id')?.value || '',
+    amount: Number(document.getElementById('refund-amount')?.value || 0) || 0,
+    reason: document.getElementById('refund-reason')?.value || 'admin_cancel',
+    notes: document.getElementById('refund-notes')?.value || '',
+  };
+  const out = document.getElementById('refund-result');
+  try {
+    const result = await adminCloudFetch('processRefund', { body });
+    if (out) out.textContent = `Refund status ${result.status || 'processed'} · Refund event ${result.refundEventId || '-'} · Clawback ${result.clawbackAmount || 0}`;
+    toast('Refund processed and ledger updated.', 'success');
+    await loadPaymentResilienceView('refunds');
+  } catch (error) {
+    if (out) out.textContent = error.message || 'Refund failed.';
+    toast(error.message || 'Refund failed.', 'error');
+  }
+}
+
+async function runManualReconciliation() {
+  const out = document.getElementById('reconciliation-result');
+  try {
+    const result = await adminCloudFetch('adminRunPaymentReconciliation', { body: { limit: 100 } });
+    if (out) out.textContent = `Run ${result.runId || '-'} scanned ${result.scanned || 0}, found ${result.capturedFound || 0}, activated ${result.activated || 0}.`;
+    toast('Reconciliation completed.', 'success');
+    await loadPaymentResilienceView('reconciliation');
+  } catch (error) {
+    if (out) out.textContent = error.message || 'Reconciliation failed.';
+    toast(error.message || 'Reconciliation failed.', 'error');
+  }
 }
 
 function _agentCommissionPercent(agent) {

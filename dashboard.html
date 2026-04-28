@@ -2256,6 +2256,18 @@ a{text-decoration:none;color:inherit;}
           </div>
         </div>
         <div class="set-card">
+          <div class="set-h"><div class="set-h-ico">INR</div><div class="set-h-title">Recent Payments</div></div>
+          <div id="recent-payments-list" class="priv-list">
+            <div class="priv-row">
+              <div>
+                <div class="priv-lbl">No recent online payment loaded</div>
+                <div class="priv-sub">Use this after checkout if Razorpay charged you but membership or verification did not update.</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn-save" id="recent-payments-refresh-btn" onclick="refreshRecentPayments(true)">Check Payment Status</button>
+        </div>
+        <div class="set-card">
           <div class="set-h"><div class="set-h-ico">🔑</div><div class="set-h-title">Account Settings</div></div>
           <div class="f"><label>Mobile Number</label><input value="+91 94401 76078" readonly style="background:var(--w);cursor:not-allowed"></div>
           <div class="f"><label>Email Address</label><input value="lakshmi@email.com"></div>
@@ -2816,6 +2828,106 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function readRecentPaymentHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem('parichayam_payment_history') || '[]');
+    return Array.isArray(history) ? history.slice().reverse().slice(0, 5) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function formatPaymentDate(value) {
+  if (!value) return 'recently';
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return 'recently';
+  return new Date(parsed).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function buildRecentPaymentPayload() {
+  const session = getMemberSession() || {};
+  const latest = readRecentPaymentHistory()[0] || {};
+  return {
+    orderId: session.pendingPaymentOrderId || session.lastOrderId || latest.gatewayOrderId || '',
+    paymentId: session.lastPaymentId || latest.gatewayPaymentId || '',
+  };
+}
+
+function renderRecentPayments(statusResult) {
+  const list = document.getElementById('recent-payments-list');
+  if (!list) return;
+  const session = getMemberSession() || {};
+  const history = readRecentPaymentHistory();
+  const rows = [];
+  const status = statusResult?.status || session.paymentStatus || (history[0]?.status || 'none');
+  const statusLabel = String(status || 'none').replace(/_/g, ' ');
+  const statusColor = /paid/.test(statusLabel) ? 'var(--gn)' : (/pending|awaiting|activation/.test(statusLabel) ? 'var(--g)' : 'var(--mu)');
+  if (statusResult || session.lastOrderId || session.pendingPaymentOrderId || history.length) {
+    const latest = history[0] || {};
+    rows.push(`
+      <div class="priv-row">
+        <div>
+          <div class="priv-lbl">Status: <span style="color:${statusColor};text-transform:capitalize">${escapeHtml(statusLabel)}</span></div>
+          <div class="priv-sub">Order ${escapeHtml(statusResult?.orderId || session.pendingPaymentOrderId || session.lastOrderId || latest.gatewayOrderId || '-')} · Payment ${escapeHtml(statusResult?.paymentId || session.lastPaymentId || latest.gatewayPaymentId || '-')}</div>
+        </div>
+      </div>
+    `);
+    history.slice(0, 3).forEach((item) => {
+      rows.push(`
+        <div class="priv-row">
+          <div>
+            <div class="priv-lbl">${escapeHtml(item.itemName || item.plan || 'Payment')} · ${escapeHtml(item.status || 'recorded')}</div>
+            <div class="priv-sub">Rs. ${Number(item.totalAmount || item.amount || 0).toLocaleString('en-IN')} · ${formatPaymentDate(item.createdAt || item.date || item.timestamp)}</div>
+          </div>
+        </div>
+      `);
+    });
+  }
+  if (!rows.length) {
+    rows.push(`
+      <div class="priv-row">
+        <div>
+          <div class="priv-lbl">No recent online payment loaded</div>
+          <div class="priv-sub">If Razorpay charged you but your account did not update, come back here and tap Check Payment Status.</div>
+        </div>
+      </div>
+    `);
+  }
+  list.innerHTML = rows.join('');
+}
+
+async function refreshRecentPayments(showResultToast) {
+  renderRecentPayments();
+  const btn = document.getElementById('recent-payments-refresh-btn');
+  const payload = buildRecentPaymentPayload();
+  if (!payload.orderId && !payload.paymentId) {
+    if (showResultToast) showToast('No recent online payment found for this account.', 'info');
+    return null;
+  }
+  if (!window.ParichayamFirebase?.checkPaymentStatus) {
+    if (showResultToast) showToast('Payment status check is not available yet.', 'warning');
+    return null;
+  }
+  try {
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+    const result = await window.ParichayamFirebase.checkPaymentStatus(payload);
+    if (result?.result?.member) {
+      const current = getMemberSession() || {};
+      sessionStorage.setItem('parichayam_member_session', JSON.stringify({ ...current, ...result.result.member }));
+    }
+    renderRecentPayments(result);
+    if (showResultToast) {
+      showToast(result?.activated ? 'Payment recovered and account updated.' : 'Payment status refreshed.', result?.pendingActivation ? 'warning' : 'success');
+    }
+    return result;
+  } catch (error) {
+    if (showResultToast) showToast(error.message || 'Unable to check payment status.', 'error');
+    return null;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Check Payment Status'; }
+  }
 }
 
 function normalizeProfileNumber(value) {
@@ -4257,6 +4369,7 @@ function nav(id, el) {
   if (id === 'search') initSearchAccess();
   if (id === 'jathakam') populateJathakamFromProfile();
   if (id === 'profile') { loadProfileGotras(); updateProfileCity(); }
+  if (id === 'settings') { renderRecentPayments(); refreshRecentPayments(false); }
 }
 
 // ── INTEREST TABS ──
@@ -7186,6 +7299,7 @@ syncOppositeGenderDemoContent = function() {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+  renderRecentPayments();
   setTimeout(async () => {
     try {
       try { await window.ParichayamFirebase?.bootstrapPage?.('dashboard'); } catch (e) {}

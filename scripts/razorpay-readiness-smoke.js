@@ -6,7 +6,7 @@ const firestoreUrl = `http://${firestoreHost}/v1/projects/${projectId}/databases
 async function main() {
   const payload = {
     name: "Razorpay Readiness Test",
-    email: "support@parichayam.co.im",
+    email: "support@parichayam.co.in",
     phone: "9440176078",
     category: "general",
     message: "Smoke test submission for Razorpay launch readiness contact form.",
