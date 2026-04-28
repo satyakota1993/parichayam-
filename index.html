@@ -32,7 +32,7 @@
   "contactPoint": {
     "@type": "ContactPoint",
     "telephone": "+91-94401-76078",
-    "email": "support@parichayam.co.in",
+    "email": "support@parichayam.co.im",
     "contactType": "customer service",
     "availableLanguage": ["English", "Telugu"]
   },
@@ -65,6 +65,7 @@
 </script>
 
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Tiro+Telugu&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="parichayam-site-common.css">
 <style>
 :root{--m:#7B1C2E;--d:#4A0E1A;--d2:#2A0810;--g:#C9963A;--gl:#E8C06A;--gp:#F5E6C0;--cr:#FDF6EC;--w:#F5EAD8;--tx:#2C1A10;--mu:#8A6A58;--wh:#FFFDF9;--gn:#166534;--gn2:#EAF3DE;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -281,16 +282,14 @@ footer{background:var(--d2);padding:3rem 2.5rem 1.8rem;border-top:1px solid rgba
     </div>
   </div>
   <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#how-it-works">How It Works</a>
-    <a href="#membership">Membership</a>
-    
-    <a href="#stories">Success Stories</a>
+    <a href="/about.html">About</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/contact.html">Contact</a>
   </div>
   <div class="nav-acts">
     <a class="btn-nl" href="agent.html" style="display:flex;align-items:center;gap:.35rem">🤝 Agent</a>
-    <a class="btn-nl" href="auth.html">Member Sign In</a>
-    <a class="btn-nr" href="auth.html">Create Free Profile →</a>
+    <a class="btn-nl" href="auth.html">Sign In</a>
+    <a class="btn-nr" href="auth.html">Register →</a>
     <button class="ham" id="hamBtn" aria-label="Open menu" onclick="toggleMobMenu()"><span></span><span></span><span></span></button>
   </div>
 </nav>
@@ -298,10 +297,12 @@ footer{background:var(--d2);padding:3rem 2.5rem 1.8rem;border-top:1px solid rgba
   <a href="#features" onclick="closeMobMenu()">Features</a>
   <a href="#how-it-works" onclick="closeMobMenu()">How It Works</a>
   <a href="#membership" onclick="closeMobMenu()">Membership</a>
-  <a href="#stories" onclick="closeMobMenu()">Success Stories</a>
+  <a href="/about.html">About</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/contact.html">Contact</a>
   <a href="agent.html" style="color:var(--gl)">🤝 Agent Portal</a>
-  <a href="auth.html">Member Sign In</a>
-  <a href="auth.html" style="color:var(--gl);font-weight:500;">Create Free Profile →</a>
+  <a href="auth.html">Sign In</a>
+  <a href="auth.html" style="color:var(--gl);font-weight:500;">Register →</a>
 </div>
 
 <div class="tbar">
@@ -645,43 +646,45 @@ footer{background:var(--d2);padding:3rem 2.5rem 1.8rem;border-top:1px solid rgba
   </ul>
 </div>
 
-<footer>
+<footer class="parichayam-trust-footer">
   <div class="fg">
     <div>
-      <div class="fb-name">Parichayam 🪷</div>
-      <div class="fb-desc">Trusted Arya Vyshya Matrimony Platform. Every profile verified by our matchmaker. Same-Gotra auto-block, Padam Nakshatra matching, AI biodata auto-fill, community elder endorsements. Serving AP & TS since 2024.</div>
-      <div style="margin-top:1rem;font-size:.7rem;color:rgba(255,255,255,.22)">📍 Vijayawada, Andhra Pradesh · parichayam.co.in</div>
+      <div class="fb-name">Parichayam</div>
+      <div class="fb-desc">Arya Vyshya matrimony for Andhra Pradesh and Telangana families, combining lineage-aware matching, family involvement, dedicated matchmakers, and transparent membership policies.</div>
+      <div style="margin-top:1rem;font-size:.7rem;color:rgba(255,255,255,.22)">Vijayawada, Andhra Pradesh · parichayam.co.in</div>
     </div>
     <div class="fc">
-      <h4>Platform</h4>
-      <a href="auth.html">Create Profile</a>
-      <a href="auth.html">Sign In</a>
-      <a href="#membership">Membership Plans</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="agent.html">🤝 Agent Portal</a>
-      <a href="agent.html">Apply to be an Agent</a>
+      <h4>Company</h4>
+      <a href="/about.html">About</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/contact.html#careers">Careers</a>
+      <a href="/pricing.html">Pricing</a>
     </div>
     <div class="fc">
-      <h4>Services</h4>
-      <a href="#">Pandits & Priests</a>
-      <a href="#">Photographers</a>
-      <a href="#">Astrologers</a>
-      <a href="#">Marriage Halls</a>
-      <a href="#">All Services</a>
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/refund.html">Refund Policy</a>
+      <a href="/shipping-policy.html">Shipping / Service Delivery</a>
     </div>
     <div class="fc">
-      <h4>Legal & Support</h4>
-      <a href="/terms">Terms & Conditions</a>
-      <a href="/privacy">Privacy Policy</a>
-      <a href="/contact">Contact Us</a>
-      <a href="/refund-policy">Cancellation & Refund Policy</a>
-      <a href="/shipping-policy">Shipping / Service Delivery Policy</a>
+      <h4>Support</h4>
+      <a href="/contact.html#help">Help</a>
+      <a href="/contact.html#grievance">Grievance Officer</a>
+      <a href="/pricing.html#faq">FAQ</a>
       <a href="admin.html">Admin Login</a>
+    </div>
+    <div class="fc">
+      <h4>Connect</h4>
+      <a href="https://wa.me/919440176078" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="mailto:support@parichayam.co.im">Email</a>
+      <a href="tel:+919440176078">Phone</a>
+      <a href="/contact.html#connect">Instagram</a>
     </div>
   </div>
   <div class="fb">
-    <div>© 2025 Parichayam. All rights reserved. Vijayawada, Andhra Pradesh, India.</div>
-    <div>Trusted Arya Vyshya Matrimony · parichayam.co.in · <a href="mailto:support@parichayam.co.in">support@parichayam.co.in</a></div>
+    <div>© 2026 Parichayam. All rights reserved.</div>
+    <div>GSTIN: To be updated after registration · DPDP Act 2023 ready · <a href="mailto:support@parichayam.co.im">support@parichayam.co.im</a></div>
   </div>
 </footer>
 
@@ -808,5 +811,6 @@ document.addEventListener('parichayam:firebase-ready', function(event){
   if (event?.detail?.pageName === 'index') syncIndexPrices();
 });
 </script>
+<script src="parichayam-site-common.js"></script>
 </body>
 </html>

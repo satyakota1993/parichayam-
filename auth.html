@@ -34,6 +34,7 @@
 
 <!-- FONTS -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Tiro+Telugu&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="parichayam-site-common.css">
 <style>
 /* ── CSS VARIABLES — Change a color here, entire page updates ── */
 :root{--maroon:#7B1C2E;--deep:#4A0E1A;--deep2:#2A0810;--gold:#C9963A;--gl:#E8C06A;--cream:#FDF6EC;--warm:#F5EAD8;--text:#2C1A10;--muted:#8A6A58;--white:#FFFDF9;--green:#166534;--red:#dc2626;}
@@ -41,10 +42,10 @@
 /* ── RESET ── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;display:block;overflow-x:hidden;}
 
 /* ── LEFT PANEL — Brand showcase (hidden on mobile) ── */
-.left{width:45%;background:linear-gradient(155deg,var(--deep2) 0%,var(--deep) 40%,var(--maroon) 100%);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;overflow:hidden;}
+.left{width:45%;background:linear-gradient(155deg,var(--deep2) 0%,var(--deep) 40%,var(--maroon) 100%);position:fixed;top:64px;left:0;height:calc(100vh - 64px);display:flex;flex-direction:column;justify-content:space-between;padding:2.5rem;overflow:hidden;}
 .left::before{content:'';position:absolute;inset:0;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l5 10h10l-8 6 3 10-10-7-10 7 3-10-8-6h10z' fill='%23C9963A'/%3E%3C/svg%3E");background-size:60px;}
 .left-content{position:relative;z-index:1;}
 .brand{display:flex;align-items:center;gap:.75rem;margin-bottom:3rem;}
@@ -64,7 +65,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .ls-lbl{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);}
 
 /* ── RIGHT PANEL — Auth forms ── */
-.right{margin-left:45%;flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;min-height:100vh;}
+.right{margin-left:45%;display:flex;align-items:center;justify-content:center;padding:2rem;min-height:calc(100vh - 64px);}
 .auth-box{width:100%;max-width:460px;}
 .auth-tabs{display:flex;background:var(--warm);border-radius:12px;padding:.25rem;margin-bottom:1.8rem;}
 .at{flex:1;padding:.65rem;border:none;background:transparent;border-radius:10px;font-size:.85rem;font-weight:500;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .22s;text-align:center;}
@@ -149,6 +150,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 </style>
 </head>
 <body>
+
+<nav class="pc-public-nav" aria-label="Public navigation">
+  <a class="pc-public-brand" href="/index.html">
+    <span class="pc-public-brand-mark">P</span>
+    <span><span class="pc-public-brand-name">Parichayam</span><span class="pc-public-brand-sub">Arya Vyshya Matrimony</span></span>
+  </a>
+  <div class="pc-public-links">
+    <a href="/about.html">About</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/contact.html">Contact</a>
+    <a href="/auth.html">Sign In</a>
+    <a class="pc-public-register" href="/auth.html">Register</a>
+  </div>
+</nav>
 
 <!-- LEFT BRANDING PANEL (desktop only) -->
 <aside class="left">
@@ -273,7 +288,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
           <div class="f-group"><label class="f-label">Confirm *</label><div class="inp-wrap"><span class="inp-icon">🔒</span><input class="f-inp" id="reg-confirm-pass" type="password" placeholder="Repeat"><button class="inp-toggle" type="button" onclick="togglePass('reg-confirm-pass',this)">👁</button></div></div>
         </div>
         <div class="terms-row"><input type="checkbox" class="terms-cb" id="terms-cb"><label for="terms-cb" class="terms-text">I agree to Parichayam's <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</label></div>
-        <div class="legal-links"><a href="/contact" target="_blank" rel="noopener">Contact Us</a> · <a href="/refund-policy" target="_blank" rel="noopener">Cancellation & Refund Policy</a> · <a href="/shipping-policy" target="_blank" rel="noopener">Shipping / Service Delivery Policy</a></div>
+        <div class="legal-links"><a href="/contact.html" target="_blank" rel="noopener">Contact Us</a> · <a href="/refund.html" target="_blank" rel="noopener">Refund Policy</a> · <a href="/shipping-policy.html" target="_blank" rel="noopener">Shipping / Service Delivery Policy</a></div>
         <button class="btn-submit" id="btn-register-step1" type="button" onclick="regStep1Next()">Continue →</button>
         <div class="auth-footer">Already have an account? <a onclick="switchTab('login',null)">Sign In</a></div>
       </div>
@@ -318,6 +333,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-storage-compat.js"></script>
 <script src="parichayam-firebase-config.js"></script>
 <script src="parichayam-firebase.js"></script>
+<script src="parichayam-site-common.js"></script>
 <script>
 /* ── STATE ── */
 let loginMethod = 'mobile';

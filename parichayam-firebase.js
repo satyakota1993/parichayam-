@@ -102,7 +102,7 @@
   const options = Object.assign(
     {
       appUrl: "https://parichayam.co.in",
-      supportEmail: "hello@parichayam.co.in",
+      supportEmail: "support@parichayam.co.im",
       supportPhone: "9440176078",
       adminEmails: [],
       functionsRegion: "us-central1",
@@ -463,6 +463,22 @@
     if (!projectId) return "";
     const region = String(options.functionsRegion || "us-central1").trim() || "us-central1";
     return `https://${region}-${projectId}.cloudfunctions.net/${fnName}`;
+  }
+
+  async function submitContactForm(payload) {
+    if (!originalFetch) throw buildError(503, "Network requests are not available.", "contact/network-unavailable");
+    const endpoint = getFunctionEndpoint("submitContactForm");
+    if (!endpoint) throw buildError(503, "Contact service is not configured.", "contact/not-configured");
+    const response = await originalFetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload || {}),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.ok === false) {
+      throw buildError(response.status || 500, body.message || "Unable to submit your request right now.", body.code || "contact/submit-failed");
+    }
+    return body;
   }
 
   async function ensureAuthReady() {
@@ -1875,6 +1891,7 @@
     register: apiRegister,
     login: apiLogin,
     requestPasswordReset: apiForgotPasswordRequest,
+    submitContactForm,
     signInWithCustomToken,
     completeMembership: apiCompleteMembership,
     bootstrapPage,

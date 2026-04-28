@@ -25,6 +25,7 @@ const AUTH_RATE_LIMIT_COLLECTION = "authRateLimits";
 const PAYMENT_ORDERS_COLLECTION = "paymentOrders";
 const PAYMENTS_COLLECTION = "payments";
 const REVENUE_EVENTS_COLLECTION = "revenueEvents";
+const COMPLAINTS_COLLECTION = "complaints";
 const REVENUE_SCHEMA_VERSION = 1;
 const REVENUE_LOCK_DAYS = 30;
 const REVENUE_LOCK_MS = REVENUE_LOCK_DAYS * 24 * 60 * 60 * 1000;
@@ -94,6 +95,7 @@ const DEFAULT_PUBLIC_PROFILE_FIELDS = {
   about: true,
   verification: true,
 };
+const CONTACT_FORM_CATEGORIES = new Set(["general", "refund", "grievance", "technical"]);
 
 function normalizePhone(value) {
   return String(value || "").replace(/[^\d]/g, "").replace(/^91/, "").slice(-10);
@@ -1113,6 +1115,24 @@ function normalizeRateKeyPart(value) {
     .slice(0, 80) || "unknown";
 }
 
+function cleanSingleLine(value, maxLength) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength || 500);
+}
+
+function cleanLongText(value, maxLength) {
+  return String(value || "")
+    .replace(/\r/g, "")
+    .trim()
+    .slice(0, maxLength || 2000);
+}
+
+function isValidSupportEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
 async function enforceAuthRateLimit(scope, key, limit, windowMs, message) {
   const now = Date.now();
   const windowStart = now - (now % windowMs);
@@ -1658,6 +1678,80 @@ exports.initializeMyMemberProfile = onRequest({ region: "us-central1" }, async (
     sendJson(req, res, error.status || 500, {
       message: error.message || "Unable to initialize member profile right now.",
       code: error.code || "",
+    });
+  }
+});
+
+exports.submitContactForm = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+  if (req.method !== "POST") {
+    sendJson(req, res, 405, { message: "Method not allowed." });
+    return;
+  }
+  try {
+    const clientIp = extractClientIp(req);
+    await enforceAuthRateLimit("submitContactForm:ip", clientIp, 8, 60 * 60 * 1000, "Too many contact requests from this network. Please email support instead.");
+
+    const body = req.body || {};
+    const name = cleanSingleLine(body.name, 120);
+    const email = cleanSingleLine(body.email, 180).toLowerCase();
+    const phone = normalizePhone(body.phone);
+    const category = cleanSingleLine(body.category, 40).toLowerCase();
+    const message = cleanLongText(body.message, 2000);
+
+    if (!name || name.length < 2) {
+      sendJson(req, res, 400, { message: "Please enter your name." });
+      return;
+    }
+    if (!isValidSupportEmail(email)) {
+      sendJson(req, res, 400, { message: "Please enter a valid email address." });
+      return;
+    }
+    if (!phone || phone.length !== 10) {
+      sendJson(req, res, 400, { message: "Please enter a valid 10-digit Indian phone number." });
+      return;
+    }
+    if (!CONTACT_FORM_CATEGORIES.has(category)) {
+      sendJson(req, res, 400, { message: "Please choose a valid contact category." });
+      return;
+    }
+    if (!message || message.length < 10) {
+      sendJson(req, res, 400, { message: "Please describe the issue in at least 10 characters." });
+      return;
+    }
+
+    await enforceAuthRateLimit("submitContactForm:email", email, 5, 60 * 60 * 1000, "Too many contact requests for this email. Please wait and try again.");
+
+    const complaintRef = await db.collection(COMPLAINTS_COLLECTION).add({
+      name,
+      email,
+      phone,
+      category,
+      message,
+      status: "new",
+      priority: category === "grievance" ? "high" : "normal",
+      source: "contact_page",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      ipAddress: clientIp,
+      userAgent: cleanSingleLine(req.headers["user-agent"], 300),
+      assignedTo: "",
+      adminNotes: "",
+    });
+
+    sendJson(req, res, 200, {
+      ok: true,
+      complaintId: complaintRef.id,
+      message: "Your request was submitted. Parichayam support will respond within the published SLA.",
+    });
+  } catch (error) {
+    logger.error("submitContactForm failed", error);
+    sendJson(req, res, error.status || 500, {
+      message: error.message || "Unable to submit your request right now.",
     });
   }
 });

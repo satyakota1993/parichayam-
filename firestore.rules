@@ -56,6 +56,34 @@ service cloud.firestore {
       ];
     }
 
+    function isValidComplaintCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'email',
+          'phone',
+          'category',
+          'message',
+          'status',
+          'source',
+          'createdAt'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() >= 5 &&
+        request.resource.data.email.size() <= 180 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 10 &&
+        request.resource.data.phone.size() <= 20 &&
+        request.resource.data.category in ['general', 'refund', 'grievance', 'technical'] &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() >= 10 &&
+        request.resource.data.message.size() <= 2000 &&
+        request.resource.data.status == 'new' &&
+        request.resource.data.source == 'contact_page';
+    }
+
     function memberProtectedFieldsForCreate() {
       return [
         'profileNumber',
@@ -296,6 +324,12 @@ service cloud.firestore {
 
     match /agentApplications/{applicationId} {
       allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /complaints/{complaintId} {
+      // Public contact form rate limiting is enforced by the submitContactForm Cloud Function.
+      allow create: if isValidComplaintCreate();
       allow read, update, delete: if isAdmin();
     }
 

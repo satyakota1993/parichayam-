@@ -29,8 +29,28 @@
         "type": 301
       },
       {
+        "source": "/about.html",
+        "destination": "/about",
+        "type": 301
+      },
+      {
+        "source": "/pricing.html",
+        "destination": "/pricing",
+        "type": 301
+      },
+      {
+        "source": "/refund.html",
+        "destination": "/refund",
+        "type": 301
+      },
+      {
         "source": "/refund-policy.html",
-        "destination": "/refund-policy",
+        "destination": "/refund",
+        "type": 301
+      },
+      {
+        "source": "/refund-policy",
+        "destination": "/refund",
         "type": 301
       },
       {
@@ -53,8 +73,20 @@
         "destination": "/contact.html"
       },
       {
+        "source": "/about",
+        "destination": "/about.html"
+      },
+      {
+        "source": "/pricing",
+        "destination": "/pricing.html"
+      },
+      {
+        "source": "/refund",
+        "destination": "/refund.html"
+      },
+      {
         "source": "/refund-policy",
-        "destination": "/refund-policy.html"
+        "destination": "/refund.html"
       },
       {
         "source": "/shipping-policy",
