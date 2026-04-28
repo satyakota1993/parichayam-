@@ -30,6 +30,7 @@ const COMPLAINTS_COLLECTION = "complaints";
 const PENDING_ACTIVATIONS_COLLECTION = "pendingActivations";
 const ADMIN_ALERTS_COLLECTION = "adminAlerts";
 const PAYMENT_RECONCILIATION_RUNS_COLLECTION = "paymentReconciliationRuns";
+const RECONCILIATION_REPORTS_COLLECTION = "reconciliationReports";
 const REVENUE_SCHEMA_VERSION = 1;
 const REVENUE_LOCK_DAYS = 30;
 const REVENUE_LOCK_MS = REVENUE_LOCK_DAYS * 24 * 60 * 60 * 1000;
@@ -1166,11 +1167,19 @@ function firebaseAuthApiKey() {
 }
 
 function razorpayKeyId() {
-  return String(process.env.RAZORPAY_KEY_ID || "").trim();
+  return String(process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_TEST_KEY_ID || "").trim();
 }
 
 function razorpayKeySecret() {
-  return String(process.env.RAZORPAY_KEY_SECRET || "").trim();
+  return String(process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_TEST_KEY_SECRET || "").trim();
+}
+
+function razorpayWebhookSecret() {
+  return String(process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_TEST_WEBHOOK_SECRET || "").trim();
+}
+
+function isRazorpayTestMode() {
+  return /^rzp_test_/i.test(razorpayKeyId());
 }
 
 function isRazorpayConfigured() {
@@ -1361,7 +1370,7 @@ function buildMembershipRevenueEvents(params) {
 }
 
 async function createRazorpayRefund(paymentId, amountInRupees, notes) {
-  if (isFunctionsEmulatorRuntime()) {
+  if (isFunctionsEmulatorRuntime() || (isRazorpayTestMode() && process.env.PARICHAYAM_TEST_REFUND_FALLBACK === "true")) {
     const error = new Error("Razorpay refund skipped in emulator; ledger fallback is active.");
     error.status = 502;
     throw error;
@@ -1930,8 +1939,34 @@ async function runPaymentReconciliation(params = {}) {
     ...result,
     createdAt: FieldValue.serverTimestamp(),
   });
+  const reportId = new Date().toISOString().slice(0, 10);
+  await db.collection(RECONCILIATION_REPORTS_COLLECTION).doc(reportId).set({
+    reportDate: reportId,
+    source,
+    razorpayPayments: result.capturedFound,
+    revenueEventsLedger: result.capturedFound - result.errors.length,
+    matchedCount: result.capturedFound - result.errors.length,
+    mismatches: result.errors,
+    status: result.errors.length ? "review_required" : "pass",
+    runId: runRef.id,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
   result.runId = runRef.id;
   return result;
+}
+
+function verifyRazorpayWebhookSignature(rawBody, signature) {
+  const secret = razorpayWebhookSecret();
+  if (!secret) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+  return expected === String(signature || "");
+}
+
+function unsignedTestWebhooksAllowed() {
+  return isRazorpayTestMode() && process.env.PARICHAYAM_ALLOW_UNSIGNED_TEST_WEBHOOKS === "true";
 }
 
 function verifyRazorpaySignature(orderId, paymentId, signature) {
@@ -3100,6 +3135,97 @@ exports.checkPaymentStatus = onRequest({ region: "us-central1" }, async (req, re
   }
 });
 
+exports.razorpayWebhook = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    if (!isRazorpayConfigured()) {
+      sendJson(req, res, 503, { message: "Razorpay is not configured." });
+      return;
+    }
+    const rawBody = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body || {});
+    const signature = String(req.headers["x-razorpay-signature"] || "").trim();
+    if (!verifyRazorpayWebhookSignature(rawBody, signature) && !unsignedTestWebhooksAllowed()) {
+      sendJson(req, res, 401, { message: "Invalid Razorpay webhook signature." });
+      return;
+    }
+    const eventName = String(req.body?.event || "").trim();
+    const payment = req.body?.payload?.payment?.entity || req.body?.payment || {};
+    const paymentId = String(payment.id || "").trim();
+    const orderId = String(payment.order_id || payment.orderId || "").trim();
+    const paymentStatus = String(payment.status || "").toLowerCase();
+    if (!paymentId || !orderId) {
+      sendJson(req, res, 400, { message: "Webhook payment payload is incomplete." });
+      return;
+    }
+    if (!["payment.captured", "payment.authorized"].includes(eventName) && paymentStatus !== "captured") {
+      sendJson(req, res, 200, { ok: true, ignored: true, event: eventName, status: paymentStatus });
+      return;
+    }
+
+    const orderSnap = await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get();
+    if (!orderSnap.exists) {
+      await writeAdminAlert({
+        type: "razorpay_webhook_unknown_order",
+        severity: "warning",
+        title: "Razorpay webhook received for unknown order",
+        message: `Payment ${paymentId} referenced order ${orderId}, but no paymentOrders document exists.`,
+        orderId,
+        paymentId,
+        source: "razorpay_webhook",
+      });
+      sendJson(req, res, 202, { ok: false, queued: false, message: "Unknown order; admin alert created." });
+      return;
+    }
+    const orderData = orderSnap.data() || {};
+    const uid = String(orderData.uid || "").trim();
+    if (!uid) {
+      await writeAdminAlert({
+        type: "razorpay_webhook_missing_uid",
+        severity: "critical",
+        title: "Razorpay webhook order missing member UID",
+        message: `Payment ${paymentId} could not activate because order ${orderId} has no uid.`,
+        orderId,
+        paymentId,
+        source: "razorpay_webhook",
+      });
+      sendJson(req, res, 202, { ok: false, queued: false, message: "Order missing uid; admin alert created." });
+      return;
+    }
+
+    try {
+      const result = await activateVerifiedPurchase({
+        uid,
+        orderId,
+        paymentId,
+        skipSignature: true,
+        gatewayPayment: payment,
+        source: "razorpay_webhook",
+        pendingActivationId: paymentId,
+      });
+      sendJson(req, res, 200, { ok: true, activated: true, result });
+    } catch (activationError) {
+      const pendingActivationId = await recordPendingActivationFailure({
+        uid,
+        orderId,
+        paymentId,
+        error: activationError,
+        source: "razorpay_webhook_failed",
+      });
+      sendJson(req, res, 202, {
+        ok: false,
+        pendingActivation: true,
+        pendingActivationId,
+        message: "Webhook received; activation queued for recovery.",
+      });
+    }
+  } catch (error) {
+    logger.error("razorpayWebhook failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to process Razorpay webhook." });
+  }
+});
+
 exports.retryPendingActivations = onSchedule({
   schedule: "every 10 minutes",
   timeZone: "Asia/Kolkata",
@@ -3813,12 +3939,40 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
         processedBy: adminUser.uid,
       });
     } catch (refundError) {
-      if (!isFunctionsEmulatorRuntime()) throw refundError;
+      const allowLedgerFallback = isFunctionsEmulatorRuntime() ||
+        (isRazorpayTestMode() && process.env.PARICHAYAM_TEST_REFUND_FALLBACK === "true");
+      if (!allowLedgerFallback) {
+        await writeAdminAlert({
+          type: "razorpay_refund_failed",
+          severity: "warning",
+          title: "Razorpay refund failed",
+          message: String(refundError?.message || "Refund API call failed before ledger events were created."),
+          memberId: String(originalEvent.memberId || ""),
+          orderId,
+          paymentId,
+          relatedCollection: REVENUE_EVENTS_COLLECTION,
+          relatedId: originalDoc.id,
+          source: "process_refund",
+        });
+        throw refundError;
+      }
       refundAttemptError = refundError?.message || String(refundError || "Unknown Razorpay emulator error");
       logger.warn("processRefund: Razorpay refund failed in emulator; recording ledger fallback.", {
         orderId,
         paymentId,
         refundAttemptError,
+      });
+      await writeAdminAlert({
+        type: "razorpay_refund_test_fallback",
+        severity: "warning",
+        title: "Razorpay refund fallback recorded",
+        message: refundAttemptError,
+        memberId: String(originalEvent.memberId || ""),
+        orderId,
+        paymentId,
+        relatedCollection: REVENUE_EVENTS_COLLECTION,
+        relatedId: originalDoc.id,
+        source: "process_refund",
       });
       refund = {
         id: safeRevenueEventId("emulator_refund", `${paymentId}_${Date.now()}`),

@@ -8,6 +8,11 @@
       "firestore.rules",
       "firestore.indexes.json",
       "storage.rules",
+      "functions/**",
+      "scripts/**",
+      "docs/**",
+      "**/*.patch",
+      "**/*.log",
       "**/.*",
       "**/node_modules/**"
     ],
@@ -60,6 +65,13 @@
       }
     ],
     "rewrites": [
+      {
+        "source": "/webhook/razorpay",
+        "function": {
+          "functionId": "razorpayWebhook",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "/terms",
         "destination": "/terms.html"

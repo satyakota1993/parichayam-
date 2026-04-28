@@ -353,6 +353,11 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /reconciliationReports/{reportId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /agentPayoutRequests/{requestId} {
       allow read: if isAdmin() ||
         (signedIn() && resource.data.agentId == request.auth.uid);
