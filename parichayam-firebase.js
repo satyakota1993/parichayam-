@@ -507,6 +507,18 @@
     return callAuthenticatedFunction("checkPaymentStatus", payload || {});
   }
 
+  async function getAgentSettings() {
+    return callAuthenticatedFunction("getAgentSettings", {});
+  }
+
+  async function adminSaveAgentSettings(payload) {
+    return callAuthenticatedFunction("adminSaveAgentSettings", payload || {});
+  }
+
+  async function agentGetCommissionLedger() {
+    return callAuthenticatedFunction("agentGetCommissionLedger", {});
+  }
+
   async function ensureAuthReady() {
     try {
       await withTimeout(authReadyPromise, AUTH_READY_TIMEOUT_MS, "Authentication service is taking longer than expected. Please refresh and try again.", "auth/timeout");
@@ -1919,6 +1931,9 @@
     requestPasswordReset: apiForgotPasswordRequest,
     submitContactForm,
     checkPaymentStatus,
+    getAgentSettings,
+    adminSaveAgentSettings,
+    agentGetCommissionLedger,
     signInWithCustomToken,
     completeMembership: apiCompleteMembership,
     bootstrapPage,

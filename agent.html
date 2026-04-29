@@ -156,6 +156,49 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 .ref-code{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gl);letter-spacing:.08em;margin:.3rem 0;}
 .ref-link-box{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:.5rem .7rem;font-size:.68rem;color:rgba(255,255,255,.7);word-break:break-all;margin-bottom:.65rem;cursor:pointer;}
 
+.lang-toggle{min-width:88px;height:36px;border-radius:8px;border:1px solid rgba(201,150,58,.35);background:rgba(201,150,58,.14);color:var(--gl);font-size:.72rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin-bottom:.9rem;}
+.stat-card{background:var(--wh);border:1px solid rgba(201,150,58,.2);border-radius:8px;padding:.9rem;box-shadow:var(--shadow);min-height:118px;display:flex;flex-direction:column;justify-content:space-between;}
+.stat-label{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);line-height:1.35;}
+.stat-value{font-family:'Playfair Display',serif;font-size:1.55rem;color:var(--m);line-height:1.05;margin:.35rem 0;}
+.stat-hint{font-size:.65rem;color:var(--mu);line-height:1.4;}
+.stat-action{margin-top:.45rem;min-height:36px;align-self:flex-start;}
+.section-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:.85rem;}
+.metric-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;}
+.mini-metric{background:var(--cr);border:1px solid rgba(201,150,58,.16);border-radius:8px;padding:.65rem;}
+.mini-metric strong{display:block;font-size:1rem;color:var(--d);margin-bottom:.1rem;}
+.mini-metric span{font-size:.58rem;color:var(--mu);letter-spacing:.08em;text-transform:uppercase;}
+.tier-badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(201,150,58,.12);border:1px solid rgba(201,150,58,.26);color:#92400e;border-radius:999px;padding:.24rem .62rem;font-size:.68rem;font-weight:700;}
+.quick-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.7rem;}
+.leader-list{display:flex;flex-direction:column;gap:.35rem;}
+.leader-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(201,150,58,.08);padding:.38rem 0;font-size:.74rem;}
+.toolbar{display:flex;gap:.45rem;margin-bottom:.75rem;flex-wrap:wrap;align-items:center;}
+.toolbar input,.toolbar select{min-height:44px;padding:.52rem .72rem;background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:8px;font-size:.78rem;font-family:'DM Sans',sans-serif;color:var(--tx);outline:none;}
+.toolbar input{flex:1;min-width:145px;}
+.lead-table{width:100%;border-collapse:collapse;background:var(--wh);border:1px solid rgba(201,150,58,.14);border-radius:8px;overflow:hidden;}
+.lead-table th,.lead-table td{padding:.7rem .6rem;text-align:left;border-bottom:1px solid rgba(201,150,58,.08);font-size:.72rem;vertical-align:top;}
+.lead-table th{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);background:rgba(201,150,58,.06);}
+.status-pill{display:inline-flex;align-items:center;gap:.28rem;border-radius:999px;padding:.2rem .52rem;font-size:.62rem;font-weight:700;white-space:nowrap;}
+.status-signup{background:rgba(250,204,21,.16);color:#854d0e;border:1px solid rgba(250,204,21,.28);}
+.status-locked{background:rgba(249,115,22,.14);color:#9a3412;border:1px solid rgba(249,115,22,.24);}
+.status-available{background:rgba(22,101,52,.1);color:var(--gn);border:1px solid rgba(22,101,52,.2);}
+.status-disputed{background:rgba(220,38,38,.1);color:var(--rd);border:1px solid rgba(220,38,38,.2);}
+.ledger-list{display:flex;flex-direction:column;gap:.5rem;}
+.ledger-row{border:1px solid rgba(201,150,58,.14);border-radius:8px;background:var(--wh);padding:.75rem;display:grid;grid-template-columns:1.1fr .8fr .8fr .8fr;gap:.65rem;align-items:center;}
+.ledger-row strong{font-size:.8rem;color:var(--tx);}
+.ledger-row span{display:block;font-size:.62rem;color:var(--mu);line-height:1.55;}
+.qr-wrap{display:grid;grid-template-columns:180px 1fr;gap:1rem;align-items:center;}
+#qr-canvas{width:180px;height:180px;background:#fff;border:1px solid rgba(201,150,58,.18);border-radius:8px;padding:.35rem;}
+.template-grid,.material-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;}
+.tool-card{border:1px solid rgba(201,150,58,.14);border-radius:8px;background:var(--wh);padding:.75rem;min-height:112px;}
+.tool-card h4{font-size:.82rem;color:var(--d);margin-bottom:.35rem;}
+.tool-card p{font-size:.68rem;color:var(--mu);line-height:1.55;margin-bottom:.55rem;}
+.placeholder-art{height:96px;border-radius:8px;background:linear-gradient(135deg,#7B1C2E,#C9963A);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.7rem;margin-bottom:.55rem;text-align:center;padding:.5rem;}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+.doc-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem 0;border-bottom:1px solid rgba(201,150,58,.08);font-size:.76rem;}
+.doc-row:last-child{border-bottom:none;}
+.tap-44{min-height:44px;min-width:44px;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
   .nav{padding:.6rem .85rem;}
@@ -165,6 +208,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
   .login-box{padding:1.5rem 1.1rem;}
   .modal{border-radius:16px 16px 0 0;}
   .card{padding:.85rem .9rem;}
+  .nav-name{display:none;}
+  .btabs{overflow-x:auto;justify-content:flex-start;}
+  .btab{min-width:74px;flex:0 0 auto;}
+  .stat-grid{grid-template-columns:1fr 1fr;gap:.55rem;}
+  .stat-card{min-height:126px;padding:.75rem;}
+  .section-grid,.profile-grid,.qr-wrap,.template-grid,.material-grid{grid-template-columns:1fr;}
+  .metric-row{grid-template-columns:1fr 1fr;}
+  .lead-table,.lead-table thead,.lead-table tbody,.lead-table tr,.lead-table th,.lead-table td{display:block;width:100%;}
+  .lead-table thead{display:none;}
+  .lead-table tr{border:1px solid rgba(201,150,58,.14);border-radius:8px;margin-bottom:.6rem;background:var(--wh);overflow:hidden;}
+  .lead-table td{border-bottom:none;padding:.42rem .65rem;}
+  .lead-table td::before{content:attr(data-label);display:block;font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:.1rem;}
+  .ledger-row{grid-template-columns:1fr;}
+  #qr-canvas{width:168px;height:168px;}
 }
 @media(max-width:380px){
   .kpi{min-width:100px;}
@@ -429,6 +486,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);min-h
 <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="parichayam-firebase-config.js"></script>
 <script>
 'use strict';
@@ -447,6 +505,40 @@ try {
 let AGENT = null;   // agent document
 let DASH  = null;   // full dashboard response
 let ALL_LEADS = []; // cached leads array
+let LEDGER = { rows: [], payoutHistory: [], taxSummary: {} };
+let I18N = { english: {}, telugu: {} };
+let LANG = localStorage.getItem('parichayam_agent_lang') || 'english';
+
+function installPhase210Layout(){
+  const page = document.querySelector('#dashboard .page');
+  const tabs = document.querySelector('#dashboard .btabs');
+  const navRight = document.querySelector('#dashboard .nav-right');
+  if(navRight && !document.getElementById('lang-toggle')){
+    navRight.insertAdjacentHTML('afterbegin','<button class="lang-toggle" id="lang-toggle" onclick="toggleLanguage()">తెలుగు</button>');
+  }
+  if(tabs){
+    tabs.innerHTML =
+      '<button class="btab active" data-tab-btn="overview" onclick="switchTab(\'overview\',this)"><span class="btab-icon">📊</span><span data-i18n="overview">Overview</span></button>'
+     +'<button class="btab" data-tab-btn="leads" onclick="switchTab(\'leads\',this)"><span class="btab-icon">👥</span><span data-i18n="leads">Leads</span></button>'
+     +'<button class="btab" data-tab-btn="earnings" onclick="switchTab(\'earnings\',this)"><span class="btab-icon">💰</span><span data-i18n="earnings">Earnings</span></button>'
+     +'<button class="btab" data-tab-btn="tools" onclick="switchTab(\'tools\',this)"><span class="btab-icon">🔗</span><span data-i18n="tools">Tools</span></button>'
+     +'<button class="btab" data-tab-btn="profile" onclick="switchTab(\'profile\',this)"><span class="btab-icon">👤</span><span data-i18n="profile">Profile</span></button>';
+  }
+  if(!page) return;
+  page.innerHTML =
+    '<div id="tab-overview" class="tab-content active">'
+      +'<div class="stat-grid" id="overview-stats"><div class="stat-card"><div class="spinner"></div></div></div>'
+      +'<div class="section-grid"><div class="card"><div class="card-title" data-i18n="thisMonthPerformance">This Month Performance</div><div class="metric-row" id="month-performance"></div></div><div class="card"><div class="card-title" data-i18n="tierProgress">Tier Progress</div><div id="tier-progress"></div></div></div>'
+      +'<div class="section-grid"><div class="card"><div class="card-title" data-i18n="recentActivity">Recent Activity</div><div id="activity-list"><div class="loading-full"><span class="spinner"></span> Loading...</div></div></div><div class="card"><div class="card-title" data-i18n="leaderboard">Leaderboard</div><div id="leaderboard-box"></div></div></div>'
+      +'<div class="card"><div class="card-title" data-i18n="quickActions">Quick Actions</div><div class="quick-actions"><button class="btn-sec tap-44" onclick="switchTab(\'tools\',document.querySelector(\'[data-tab-btn=tools]\'))" data-i18n="getReferralLink">Get my referral link</button><button class="btn-sec tap-44" onclick="switchTab(\'leads\',document.querySelector(\'[data-tab-btn=leads]\'))" data-i18n="viewLeads">View leads</button><button class="btn-primary tap-44" onclick="switchTab(\'earnings\',document.querySelector(\'[data-tab-btn=earnings]\'))" data-i18n="requestPayout">Request Payout</button></div></div>'
+    +'</div>'
+    +'<div id="tab-leads" class="tab-content"><div class="toolbar"><input id="lead-search" data-i18n-placeholder="searchLead" placeholder="Search name or phone" oninput="renderLeads()"><select id="lead-status-filter" onchange="renderLeads()"><option value="" data-i18n="allStatuses">All statuses</option><option value="signup" data-i18n="signedUp">Signed up</option><option value="locked" data-i18n="paidLocked">Paid — Locked</option><option value="available" data-i18n="paidAvailable">Paid — Available</option><option value="disputed" data-i18n="refundedDisputed">Refunded — Disputed</option></select><select id="lead-date-filter" onchange="renderLeads()"><option value="">All dates</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="month">This month</option></select><select id="lead-city-filter" onchange="renderLeads()"><option value="" data-i18n="allCities">All cities</option></select><button class="btn-sec tap-44" onclick="exportLeadsCsv()" data-i18n="exportCsv">Export CSV</button><button class="btn-primary tap-44" onclick="openAddLeadModal()" data-i18n="addLead">Add lead</button></div><div id="leads-count" style="font-size:.68rem;color:var(--mu);margin-bottom:.5rem"></div><div id="leads-list"><div class="loading-full"><span class="spinner"></span> Loading leads...</div></div></div>'
+    +'<div id="tab-earnings" class="tab-content"><div class="stat-grid" id="earn-kpi"><div class="stat-card"><div class="spinner"></div></div></div><div class="card"><div class="card-title" data-i18n="requestPayout">Request Payout</div><div id="payout-section"><div class="loading-full"><span class="spinner"></span></div></div></div><div class="card"><div class="card-title" data-i18n="detailedLedger">Detailed Ledger</div><div id="ledger-list"><div class="loading-full"><span class="spinner"></span></div></div></div><div class="section-grid"><div class="card"><div class="card-title" data-i18n="payoutHistory">Payout History</div><div id="payout-history"><div class="loading-full"><span class="spinner"></span></div></div></div><div class="card"><div class="card-title" data-i18n="taxSummary">Tax Summary</div><div id="tax-summary"></div></div></div></div>'
+    +'<div id="tab-tools" class="tab-content"><div class="card"><div class="card-title" data-i18n="referralLinkGenerator">Referral Link Generator</div><div class="qr-wrap"><canvas id="qr-canvas" width="180" height="180"></canvas><div><div class="ref-code" id="tools-ref-code">—</div><div class="ref-link-box" id="tools-ref-link" onclick="copyText(this.dataset.link,t(\'copied\'))" title="Click to copy"></div><div style="display:flex;gap:.45rem;flex-wrap:wrap"><button class="btn-copy tap-44" id="tools-copy-link" data-i18n="copyLink">Copy Link</button><button class="btn-copy tap-44" onclick="downloadQr()" data-i18n="downloadQr">Download QR</button><a id="tools-wa-share" href="#" target="_blank" rel="noopener" class="btn-copy tap-44" style="text-decoration:none;background:rgba(37,211,102,.15);color:#166534" data-i18n="shareWhatsApp">Share on WhatsApp</a></div></div></div></div><div class="card"><div class="card-title" data-i18n="whatsappTemplates">WhatsApp Templates</div><div class="template-grid" id="template-list"></div></div><div class="card"><div class="card-title" data-i18n="festivalOutreach">Festival Outreach</div><div class="template-grid" id="festival-list"></div></div><div class="card"><div class="card-title" data-i18n="marketingMaterials">Marketing Materials</div><div class="material-grid" id="material-list"></div></div></div>'
+    +'<div id="tab-profile" class="tab-content"><div class="profile-grid"><div class="card"><div class="card-title" data-i18n="personalDetails">Personal Details</div><div id="agent-profile-info"></div><div class="divider"></div><div class="f2"><div class="f"><label data-i18n="whatsapp">WhatsApp</label><input id="prof-whatsapp" placeholder="10-digit WhatsApp" autocomplete="off"></div><div class="f"><label data-i18n="languages">Languages</label><input id="prof-languages" placeholder="Telugu, English"></div></div><div class="f" style="flex-direction:row;align-items:center;gap:.5rem"><input id="prof-tds" type="checkbox" style="width:18px;height:18px"><label for="prof-tds" style="margin:0" data-i18n="tdsPreference">TDS Preference</label></div><button class="btn-sec tap-44" onclick="doUpdateProfile()" data-i18n="saveChanges">Save Changes</button></div><div class="card"><div class="card-title" data-i18n="bankDetails">Bank Details</div><div id="bank-profile-info"></div></div></div><div class="profile-grid"><div class="card"><div class="card-title" data-i18n="documents">Documents</div><div id="document-status"></div></div><div class="card"><div class="card-title" data-i18n="changePassword">Change Password</div><div style="font-size:.72rem;color:var(--mu);line-height:1.6;margin-bottom:.8rem">Use a strong new password with at least 8 characters.</div><button class="btn-primary tap-44" onclick="openChangePasswordModal()" data-i18n="changePassword">Change Password</button></div></div></div>';
+}
+
+installPhase210Layout();
 
 // ══════════════════════════════════════════
 // UTILITIES
@@ -589,6 +681,48 @@ function fallbackCopy(text,msg){
   document.body.removeChild(ta);
 }
 
+async function loadI18n(){
+  if(I18N.english && Object.keys(I18N.english).length) return;
+  try{
+    const resp = await fetch('agent-i18n.json',{cache:'no-store'});
+    const data = await resp.json();
+    I18N = { english:data.english||{}, telugu:data.telugu||{} };
+  }catch(e){
+    I18N = { english:{}, telugu:{} };
+  }
+}
+
+function t(key){
+  return (I18N[LANG] && I18N[LANG][key]) || (I18N.english && I18N.english[key]) || key;
+}
+
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPlaceholder); });
+  const btn = document.getElementById('lang-toggle');
+  if(btn) btn.textContent = LANG==='telugu' ? 'English' : 'తెలుగు';
+}
+
+function toggleLanguage(){
+  LANG = LANG==='telugu' ? 'english' : 'telugu';
+  localStorage.setItem('parichayam_agent_lang', LANG);
+  applyI18n();
+  renderOverview();
+  renderLeads();
+  renderEarnings();
+  renderTools();
+  renderProfile();
+}
+
+function csvCell(value){ return '"'+String(value ?? '').replace(/"/g,'""')+'"'; }
+function downloadCsvFile(filename, rows){
+  const blob = new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+
 // ══════════════════════════════════════════
 // STAGE DEFINITIONS
 // ══════════════════════════════════════════
@@ -711,18 +845,21 @@ if(fbAuth){
 // ══════════════════════════════════════════
 async function loadDashboard(){
   try{
+    await loadI18n();
     DASH  = await agentFetch('agentGetDashboard');
     AGENT = DASH.agent;
+    try{ LEDGER = await agentFetch('agentGetCommissionLedger'); }catch(e){ console.warn('Ledger load failed:',e); LEDGER = { rows: [], payoutHistory: [], taxSummary: {} }; }
     document.getElementById('login-panel').style.display='none';
     document.getElementById('dashboard').style.display='block';
     document.getElementById('nav-name').textContent = AGENT.name||'Agent';
+    applyI18n();
     renderStatusBanner();
     renderOverview();
     renderEarnings();
     renderTools();
+    renderProfile();
     // Load leads separately (can be slower)
     loadLeads();
-    loadPlanPrices();
   } catch(e){
     toast(e.message||'Failed to load dashboard.','error');
     // If account closed or not found, log out
@@ -736,10 +873,12 @@ async function refreshDashboard(){
   try{
     DASH  = await agentFetch('agentGetDashboard');
     AGENT = DASH.agent;
+    try{ LEDGER = await agentFetch('agentGetCommissionLedger'); }catch(e){ console.warn('Ledger refresh failed:',e); }
     renderStatusBanner();
     renderOverview();
     renderEarnings();
     renderTools();
+    renderProfile();
   } catch(e){ console.warn('Refresh failed:',e); }
 }
 
@@ -770,6 +909,7 @@ function switchTab(tab,btn){
 // OVERVIEW TAB
 // ══════════════════════════════════════════
 function renderOverview(){
+  return renderOverview210();
   if(!DASH||!AGENT) return;
   const k  = DASH.kpi||{};
   const sc = DASH.stageCounts||{};
@@ -859,6 +999,57 @@ function renderOverview(){
 // ══════════════════════════════════════════
 // LEADS TAB
 // ══════════════════════════════════════════
+function renderOverview210(){
+  if(!DASH||!AGENT) return;
+  const summary = DASH.commissionSummary || {};
+  const lockedDays = Number(summary.nextUnlockDays || 0);
+  const statsEl = document.getElementById('overview-stats');
+  if(statsEl){
+    statsEl.innerHTML =
+      '<div class="stat-card"><div><div class="stat-label">'+t('totalEarned')+'</div><div class="stat-value">'+formatINR(summary.totalLifetimeEarned||summary.totalEarned||0)+'</div></div><div class="stat-hint">Lifetime</div></div>'
+     +'<div class="stat-card"><div><div class="stat-label">'+t('pendingUnlock')+'</div><div class="stat-value">'+formatINR(summary.lockedAmount||0)+'</div></div><div class="stat-hint">'+(lockedDays? t('availableIn')+' '+lockedDays+' '+t('days') : 'No locked commission')+'</div></div>'
+     +'<div class="stat-card"><div><div class="stat-label">'+t('availableWithdraw')+'</div><div class="stat-value" style="color:var(--gn)">'+formatINR(summary.availableToWithdraw||summary.availableBalance||0)+'</div></div><button class="btn-primary stat-action tap-44" onclick="switchTab(\'earnings\',document.querySelector(\'[data-tab-btn=earnings]\'))">'+t('requestPayout')+'</button></div>'
+     +'<div class="stat-card"><div><div class="stat-label">'+t('alreadyPaidOut')+'</div><div class="stat-value">'+formatINR(summary.alreadyPaidOut||summary.totalPaidOut||0)+'</div></div><div class="stat-hint">Processed payouts</div></div>';
+  }
+  const month = DASH.thisMonth || {};
+  const monthEl = document.getElementById('month-performance');
+  if(monthEl){
+    monthEl.innerHTML =
+      '<div class="mini-metric"><strong>'+Number(month.signups||0)+'</strong><span>'+t('signups')+'</span></div>'
+     +'<div class="mini-metric"><strong>'+Number(month.paid||0)+'</strong><span>'+t('paid')+'</span></div>'
+     +'<div class="mini-metric"><strong>'+Number(month.conversionRate||0)+'%</strong><span>'+t('conversionRate')+'</span></div>'
+     +'<div class="mini-metric"><strong>'+formatINR(month.commission||0)+'</strong><span>'+t('commission')+'</span></div>';
+  }
+  const tier = DASH.tierProgress || {};
+  const tierEl = document.getElementById('tier-progress');
+  if(tierEl){
+    tierEl.innerHTML =
+      '<div class="tier-badge">'+esc(tier.currentTier?.name || AGENT.currentTier || 'Bronze')+' · '+Number(tier.currentTier?.commissionRate || AGENT.commissionPercent || 0)+'%</div>'
+     +'<div style="font-size:.74rem;color:var(--mu);line-height:1.55;margin-top:.65rem">'+esc(tier.message || '')+'</div>'
+     +'<div class="goal-bar-wrap" style="height:8px;margin-top:.6rem"><div class="goal-bar" style="width:'+Math.max(0,Math.min(100,Number(tier.progressPercent||0)))+'%"></div></div>';
+  }
+  const acts = DASH.recentActivity || [];
+  const actEl = document.getElementById('activity-list');
+  if(actEl){
+    actEl.innerHTML = acts.length ? acts.slice(0,10).map(a=>
+      '<div class="act-item"><div class="act-dot" style="background:var(--g)"></div><div><div class="act-text">'+esc(a.description)+'</div><div class="act-time">'+timeAgo(a.createdAt)+'</div></div></div>'
+    ).join('') : '<div class="empty-state">'+t('emptyDashboard')+'</div>';
+  }
+  const lb = DASH.leaderboard || {};
+  const lbEl = document.getElementById('leaderboard-box');
+  if(lbEl){
+    if(lb.enabled===false){
+      lbEl.innerHTML = '<div class="empty-state" style="border:none;padding:.5rem">Leaderboard is currently off.</div>';
+    } else {
+      const rankText = lb.rank ? 'Your rank this month: #'+lb.rank+' of '+(lb.activeAgents||0)+' active agents'+(lb.percentile?' (top '+lb.percentile+'%)':'') : 'No paid referrals ranked this period yet.';
+      lbEl.innerHTML = '<div style="font-size:.78rem;color:var(--tx);line-height:1.55;margin-bottom:.55rem">'+esc(rankText)+'</div>'
+        +'<div class="leader-list">'+(lb.top||[]).slice(0,10).map((row,i)=>
+          '<div class="leader-row"><span>#'+(i+1)+' '+esc(row.initials||'A.')+'</span><strong>'+Number(row.score||0).toLocaleString('en-IN')+'</strong></div>'
+        ).join('')+'</div>';
+    }
+  }
+}
+
 async function loadLeads(){
   try{
     const data  = await agentFetch('agentGetLeads');
@@ -872,6 +1063,7 @@ async function loadLeads(){
 }
 
 function renderLeads(){
+  return renderLeads210();
   const search = (document.getElementById('lead-search')?.value||'').toLowerCase().trim();
   const filter = document.getElementById('lead-filter')?.value||'';
   let list = ALL_LEADS;
@@ -925,6 +1117,91 @@ function filterLeadsByStage(stage){
   if(filter) filter.value = stage;
   switchTab('leads',document.querySelectorAll('.btab')[1]);
   renderLeads();
+}
+
+function ledgerForLead(lead){
+  if(!lead) return null;
+  const memberUid = String(lead.memberUid||'');
+  const byMember = memberUid ? (LEDGER.rows||[]).find(r=>String(r.memberId||'')===memberUid && r.eventType==='agent_commission') : null;
+  if(byMember) return byMember;
+  if(lead.stage==='converted'){
+    return {
+      lockStatus:'Available',
+      commissionAmount:Number(lead.commissionAmount||0),
+      memberPayment:Number(lead.paidAmount||0),
+      commissionRate:Number(lead.commissionPercent||0),
+      lockExpiresAt:null,
+    };
+  }
+  return null;
+}
+
+function leadPaymentStatus(lead){
+  const row = ledgerForLead(lead);
+  if(!row) return { key:'signup', cls:'status-signup', text:t('signedUp'), commission:0 };
+  const status = String(row.lockStatus||'').toLowerCase();
+  if(status.includes('disputed')) return { key:'disputed', cls:'status-disputed', text:t('refundedDisputed'), commission:row.commissionAmount||0 };
+  if(status.includes('locked')){
+    const days = daysUntil(row.lockExpiresAt);
+    return { key:'locked', cls:'status-locked', text:t('paidLocked')+(days!==null?' ('+Math.max(0,days)+'d)':''), commission:row.commissionAmount||0 };
+  }
+  return { key:'available', cls:'status-available', text:t('paidAvailable'), commission:row.commissionAmount||0 };
+}
+
+function updateLeadCityOptions(){
+  const select = document.getElementById('lead-city-filter');
+  if(!select) return;
+  const current = select.value;
+  const cities = Array.from(new Set(ALL_LEADS.map(l=>String(l.city||'').trim()).filter(Boolean))).sort();
+  select.innerHTML = '<option value="">'+t('allCities')+'</option>'+cities.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  if(cities.includes(current)) select.value = current;
+}
+
+function renderLeads210(){
+  updateLeadCityOptions();
+  const search = (document.getElementById('lead-search')?.value||'').toLowerCase().trim();
+  const statusFilter = document.getElementById('lead-status-filter')?.value||'';
+  const dateFilter = document.getElementById('lead-date-filter')?.value||'';
+  const cityFilter = document.getElementById('lead-city-filter')?.value||'';
+  const cutoff = dateFilter==='7' ? Date.now()-7*86400000 : dateFilter==='30' ? Date.now()-30*86400000 : dateFilter==='month' ? new Date(new Date().getFullYear(),new Date().getMonth(),1).getTime() : 0;
+  let list = ALL_LEADS.slice();
+  if(search) list = list.filter(l=>(l.name||'').toLowerCase().includes(search)||(l.mobile||'').includes(search)||(l.city||'').toLowerCase().includes(search));
+  if(cityFilter) list = list.filter(l=>String(l.city||'')===cityFilter);
+  if(cutoff) list = list.filter(l=>{
+    const d = l.createdAt?.toDate ? l.createdAt.toDate().getTime() : Date.parse(l.createdAt?._seconds ? new Date(l.createdAt._seconds*1000).toISOString() : l.createdAt || '');
+    return Number.isFinite(d) && d>=cutoff;
+  });
+  if(statusFilter) list = list.filter(l=>leadPaymentStatus(l).key===statusFilter);
+  const countEl = document.getElementById('leads-count');
+  if(countEl) countEl.textContent = list.length+' of '+ALL_LEADS.length+' leads';
+  const el = document.getElementById('leads-list');
+  if(!el) return;
+  if(!list.length){ el.innerHTML = '<div class="empty-state">'+(ALL_LEADS.length?'No leads match your filters.':'No leads yet. Tap Add lead to get started.')+'</div>'; return; }
+  el.innerHTML =
+    '<table class="lead-table"><thead><tr><th>'+t('name')+'</th><th>'+t('city')+'</th><th>'+t('tier')+'</th><th>'+t('status')+'</th><th>'+t('date')+'</th><th>'+t('commission')+'</th></tr></thead><tbody>'
+    +list.map(l=>{
+      const status = leadPaymentStatus(l);
+      const ph = normPhone(l.mobile);
+      return '<tr>'
+       +'<td data-label="'+t('name')+'"><strong>'+esc(l.name||'Lead')+'</strong><div style="font-size:.62rem;color:var(--mu);margin-top:.15rem">'+maskPhone(l.mobile||'')+'</div></td>'
+       +'<td data-label="'+t('city')+'">'+esc(l.city||'—')+'</td>'
+       +'<td data-label="'+t('tier')+'">'+esc(l.memberTier||l.tier||'—')+'</td>'
+       +'<td data-label="'+t('status')+'"><span class="status-pill '+status.cls+'">'+esc(status.text)+'</span><div class="lc-actions" style="margin-top:.35rem">'+(ph?'<a href="tel:+91'+ph+'" class="act-btn bg-bl" style="text-decoration:none">Call</a><a href="https://wa.me/91'+ph+'" target="_blank" rel="noopener" class="act-btn bg-gn" style="text-decoration:none">WA</a>':'')+'<button class="act-btn bg-gd" onclick="openNoteModal(\''+l.id+'\')" '+(agentIsReadOnly()?'disabled':'')+'>Note</button></div></td>'
+       +'<td data-label="'+t('date')+'">'+dateLabel(l.createdAt||l.updatedAt)+'</td>'
+       +'<td data-label="'+t('commission')+'">'+formatINR(status.commission||0)+'</td>'
+       +'</tr>';
+    }).join('')
+    +'</tbody></table>';
+}
+
+function exportLeadsCsv(){
+  const rows = [['Name','Phone','City','Tier','Status','Date','Commission'].map(csvCell).join(',')];
+  ALL_LEADS.forEach(l=>{
+    const status = leadPaymentStatus(l);
+    rows.push([l.name||'', l.mobile||'', l.city||'', l.memberTier||l.tier||'', status.text, dateLabel(l.createdAt||l.updatedAt), status.commission||0].map(csvCell).join(','));
+  });
+  downloadCsvFile('parichayam-agent-leads.csv', rows);
+  toast('CSV exported','success');
 }
 
 // ══════════════════════════════════════════
@@ -1086,6 +1363,7 @@ async function markFollowUpDone(leadId){
 // EARNINGS TAB
 // ══════════════════════════════════════════
 function renderEarnings(){
+  return renderEarnings210();
   if(!AGENT||!DASH) return;
   const kpi      = DASH.kpi||{};
   const balance  = Number(kpi.availableBalance||0);
@@ -1175,6 +1453,65 @@ function renderEarnings(){
   }
 }
 
+function renderEarnings210(){
+  if(!AGENT||!DASH) return;
+  const summary = DASH.commissionSummary || {};
+  const minPayout = Number(summary.minimumPayoutAmount || DASH.minimumPayoutAmount || 500);
+  const earnEl = document.getElementById('earn-kpi');
+  if(earnEl){
+    earnEl.innerHTML =
+      '<div class="stat-card"><div class="stat-label">'+t('totalEarned')+'</div><div class="stat-value">'+formatINR(summary.totalLifetimeEarned||0)+'</div><div class="stat-hint">Lifetime net</div></div>'
+     +'<div class="stat-card"><div class="stat-label">'+t('pendingUnlock')+'</div><div class="stat-value">'+formatINR(summary.lockedAmount||0)+'</div><div class="stat-hint">'+(summary.nextUnlockDays?summary.nextUnlockDays+' '+t('days'):'—')+'</div></div>'
+     +'<div class="stat-card"><div class="stat-label">'+t('availableWithdraw')+'</div><div class="stat-value" style="color:var(--gn)">'+formatINR(summary.availableToWithdraw||0)+'</div><div class="stat-hint">Minimum '+formatINR(minPayout)+'</div></div>'
+     +'<div class="stat-card"><div class="stat-label">'+t('alreadyPaidOut')+'</div><div class="stat-value">'+formatINR(summary.alreadyPaidOut||0)+'</div><div class="stat-hint">Completed</div></div>';
+  }
+  const payEl = document.getElementById('payout-section');
+  if(payEl){
+    const balance = Number(summary.availableToWithdraw||summary.availableBalance||0);
+    const pending = Number(summary.pendingPayoutAmount||0);
+    if(pending>0){
+      payEl.innerHTML = '<div class="status-banner inactive">You have '+formatINR(pending)+' pending for admin processing.</div>';
+    } else {
+      const canRequest = balance>=minPayout && AGENT.status==='active';
+      payEl.innerHTML =
+        '<div style="font-size:.76rem;color:var(--mu);margin-bottom:.65rem;line-height:1.6">Available: <strong>'+formatINR(balance)+'</strong> · Minimum: '+formatINR(minPayout)+' · SLA '+Number(summary.payoutSlaBusinessDays||3)+' business days</div>'
+       +'<div class="f2"><div class="f"><label>UPI ID</label><input id="pay-upi" value="'+esc(AGENT.upiId||'')+'" placeholder="name@bank" autocomplete="off"></div><div class="f"><label>Note</label><input id="pay-note" placeholder="Optional note"></div></div>'
+       +'<button class="btn-primary tap-44" onclick="doRequestPayout()" id="pay-btn" '+(canRequest?'':'disabled')+'>'+(canRequest?t('requestPayout')+' — '+formatINR(balance):'Balance below '+formatINR(minPayout))+'</button>';
+    }
+  }
+  renderLedger();
+  renderPayoutHistory();
+  const taxEl = document.getElementById('tax-summary');
+  if(taxEl){
+    taxEl.innerHTML = '<div class="info-row"><span class="info-lbl">'+t('totalThisFy')+'</span><span class="info-val">'+formatINR(LEDGER.taxSummary?.totalThisFy||0)+'</span></div><div style="font-size:.65rem;color:var(--mu);line-height:1.6;margin-top:.5rem">TDS threshold: '+formatINR(DASH.settings?.commission?.tdsThreshold||25000)+' · TDS rate '+Number(DASH.settings?.commission?.tdsRate||5)+'%</div>';
+  }
+}
+
+function renderLedger(){
+  const el = document.getElementById('ledger-list');
+  if(!el) return;
+  const rows = LEDGER.rows || [];
+  if(!rows.length){ el.innerHTML = '<div class="empty-state">No commission ledger events yet.</div>'; return; }
+  el.innerHTML = '<div class="ledger-list">'+rows.slice(0,50).map(r=>
+    '<div class="ledger-row">'
+    +'<div><strong>'+esc(r.memberName||'Member')+'</strong><span>'+dateLabel(r.date)+' · '+esc(r.tier||'Plan')+'</span><span>'+esc(r.orderId||'No order ID')+'</span></div>'
+    +'<div><strong>'+formatINR(r.memberPayment||0)+'</strong><span>'+t('memberPayment')+'</span></div>'
+    +'<div><strong>'+Number(r.commissionRate||0)+'%</strong><span>'+t('commissionRate')+'</span></div>'
+    +'<div><strong style="color:'+(Number(r.commissionAmount||0)<0?'var(--rd)':'var(--gn)')+'">'+formatINR(r.commissionAmount||0)+'</strong><span>'+esc(r.lockStatus||'')+'</span></div>'
+    +'</div>'
+  ).join('')+'</div>';
+}
+
+function renderPayoutHistory(){
+  const histEl = document.getElementById('payout-history');
+  if(!histEl) return;
+  const history = LEDGER.payoutHistory || DASH.payoutHistory || [];
+  if(!history.length){ histEl.innerHTML = '<div class="empty-state">No payouts processed yet.</div>'; return; }
+  histEl.innerHTML = history.map(h=>
+    '<div class="info-row"><div><div style="font-size:.8rem;font-weight:500">'+formatINR(h.amount||h.requestedAmount||0)+'</div><div style="font-size:.63rem;color:var(--mu)">'+dateLabel(h.requestedAt||h.createdAt)+' · '+esc(h.bankReference||h.rejectReason||'')+'</div></div><span class="badge '+(String(h.status).toLowerCase()==='paid'?'bg-gn':String(h.status).toLowerCase()==='rejected'?'bg-rd':'bg-gd')+'">'+esc(h.status||'requested')+'</span></div>'
+  ).join('');
+}
+
 async function doRequestPayout(){
   const upi  = (document.getElementById('pay-upi')?.value||'').trim();
   const note = (document.getElementById('pay-note')?.value||'').trim();
@@ -1228,6 +1565,7 @@ async function doChangePassword(){
 // TOOLS TAB
 // ══════════════════════════════════════════
 function renderTools(){
+  return renderTools210();
   if(!AGENT) return;
   const code = AGENT.referralCode||'';
   const base = window.location.origin||'';
@@ -1270,6 +1608,89 @@ function renderTools(){
   if(areaEl) areaEl.value = AGENT.area||'';
 }
 
+function renderTools210(){
+  if(!AGENT) return;
+  const code = AGENT.referralCode || AGENT.refId || '';
+  const origin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : 'https://parichayam.co.in';
+  const link = origin.replace(/\/+$/,'')+'/?ref='+encodeURIComponent(code);
+  const codeEl = document.getElementById('tools-ref-code');
+  const linkEl = document.getElementById('tools-ref-link');
+  if(codeEl) codeEl.textContent = code || '—';
+  if(linkEl){ linkEl.textContent = link; linkEl.dataset.link = link; }
+  const copyLinkBtn = document.getElementById('tools-copy-link');
+  if(copyLinkBtn) copyLinkBtn.onclick = ()=>copyText(link,t('copied'));
+  const waBtn = document.getElementById('tools-wa-share');
+  if(waBtn) waBtn.href = 'https://wa.me/?text='+encodeURIComponent('Namaste! Register on Parichayam using my referral link: '+link);
+  drawQr(link);
+  renderTemplates();
+  renderFestivals();
+  renderMaterials();
+}
+
+function drawQr(link){
+  const canvas = document.getElementById('qr-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(window.QRCode && window.QRCode.toCanvas){
+    window.QRCode.toCanvas(canvas, link, { width: 180, margin: 1, color:{ dark:'#2A0810', light:'#FFFFFF' } }, err=>{
+      if(err){ ctx.fillText('QR',75,92); }
+    });
+  } else {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,180,180);
+    ctx.fillStyle = '#2A0810'; ctx.font = '16px sans-serif'; ctx.fillText('QR',78,92);
+  }
+}
+
+function downloadQr(){
+  const canvas = document.getElementById('qr-canvas');
+  if(!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'parichayam-referral-qr.png';
+  a.href = canvas.toDataURL('image/png');
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+function renderTemplates(){
+  const el = document.getElementById('template-list');
+  if(!el) return;
+  const list = DASH.whatsappTemplates || [];
+  if(!list.length){ el.innerHTML = '<div class="empty-state">'+t('noData')+'</div>'; return; }
+  el.innerHTML = list.map((tmp,idx)=>{
+    const msg = (LANG==='telugu' ? tmp.message : (tmp.englishMessage||tmp.message)) || '';
+    return '<div class="tool-card"><h4>'+esc(tmp.title||tmp.id)+'</h4><p>'+esc(msg)+'</p><button class="btn-sec tap-44" onclick="copyTemplateMessage('+idx+')">'+t('useThis')+'</button></div>';
+  }).join('');
+}
+
+function copyTemplateMessage(idx){
+  const tmp = (DASH.whatsappTemplates || [])[idx];
+  if(!tmp) return;
+  const msg = (LANG==='telugu' ? tmp.message : (tmp.englishMessage||tmp.message)) || '';
+  copyText(msg,t('copied'));
+}
+
+function renderFestivals(){
+  const el = document.getElementById('festival-list');
+  if(!el) return;
+  const list = DASH.festivals || [];
+  if(!list.length){ el.innerHTML = '<div class="empty-state">'+t('noData')+'</div>'; return; }
+  el.innerHTML = list.map(f=>{
+    const msg = (LANG==='telugu' ? f.teluguMessage : (f.englishMessage||f.teluguMessage)) || '';
+    const text = msg + (f.promoCode ? '\nPromo code: '+f.promoCode : '') + '\n' + (document.getElementById('tools-ref-link')?.dataset.link || '');
+    return '<div class="tool-card"><h4>'+esc(f.name)+'</h4><p>'+esc(dateLabel(f.date))+' · '+esc(msg)+'</p><a class="btn-sec tap-44" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(text)+'">Share</a></div>';
+  }).join('');
+}
+
+function renderMaterials(){
+  const el = document.getElementById('material-list');
+  if(!el) return;
+  const list = DASH.marketingMaterials || [];
+  if(!list.length){ el.innerHTML = '<div class="empty-state">'+t('noData')+'</div>'; return; }
+  el.innerHTML = list.map(m=>
+    '<div class="tool-card"><div class="placeholder-art">'+esc(m.title||'Material')+'</div><h4>'+esc(m.title||'Material')+'</h4><p>'+esc(m.description||'Placeholder asset')+'</p><a class="btn-sec tap-44" href="'+esc(m.url||'#')+'" download style="text-decoration:none">'+t('download')+'</a></div>'
+  ).join('');
+}
+
 // Load plan prices from localStorage (set by admin panel)
 function loadPlanPrices(){
   try{
@@ -1284,16 +1705,58 @@ function loadPlanPrices(){
   } catch(e){ /* fallback values already shown */ }
 }
 
+function maskAccount(value){
+  const s = String(value||'');
+  if(s.length<=4) return s ? '••••'+s : 'Not set';
+  return '•••• •••• '+s.slice(-4);
+}
+
+function renderProfile(){
+  if(!AGENT) return;
+  const profEl = document.getElementById('agent-profile-info');
+  if(profEl){
+    profEl.innerHTML =
+      '<div class="info-row"><span class="info-lbl">'+t('name')+'</span><span class="info-val">'+esc(AGENT.name||'—')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">Email</span><span class="info-val">'+esc(AGENT.email||'—')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">Phone</span><span class="info-val">'+esc(AGENT.mobile||'—')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">'+t('city')+'</span><span class="info-val">'+esc(AGENT.city||'—')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">'+t('tier')+'</span><span class="info-val">'+esc(AGENT.currentTier||AGENT.commissionTier||'Bronze')+'</span></div>';
+  }
+  const bankEl = document.getElementById('bank-profile-info');
+  if(bankEl){
+    bankEl.innerHTML =
+      '<div class="info-row"><span class="info-lbl">'+t('accountName')+'</span><span class="info-val">'+esc(AGENT.bankAccountName||AGENT.accountName||'Not set')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">'+t('bank')+'</span><span class="info-val">'+esc(AGENT.bankName||'Not set')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">'+t('accountNumber')+'</span><span class="info-val">'+esc(maskAccount(AGENT.bankAccountNumber||AGENT.accountNumber||''))+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">'+t('ifsc')+'</span><span class="info-val">'+esc(AGENT.ifsc||AGENT.bankIfsc||'Not set')+'</span></div>'
+     +'<div class="info-row"><span class="info-lbl">UPI</span><span class="info-val">'+esc(AGENT.upiId||'Not set')+'</span></div>';
+  }
+  const docs = AGENT.documents || {};
+  const docEl = document.getElementById('document-status');
+  if(docEl){
+    const row = (key,label)=>'<div class="doc-row"><span>'+label+'</span><span class="badge '+(docs[key]?'bg-gn':'bg-mu')+'">'+(docs[key]?t('uploaded'):t('notUploaded'))+'</span></div>';
+    docEl.innerHTML = row('pan',t('pan')) + row('aadhaar',t('aadhaar')) + row('cheque',t('cheque'));
+  }
+  const wa = document.getElementById('prof-whatsapp');
+  const lang = document.getElementById('prof-languages');
+  const tds = document.getElementById('prof-tds');
+  if(wa) wa.value = AGENT.whatsapp || AGENT.mobile || '';
+  if(lang) lang.value = Array.isArray(AGENT.languages) ? AGENT.languages.join(', ') : String(AGENT.languages||'Telugu, English');
+  if(tds) tds.checked = AGENT.tdsPreference === true;
+}
+
 async function doUpdateProfile(){
   if(agentIsReadOnly()){ toast(getReadOnlyMsg(),'error'); return; }
-  const upiId = (document.getElementById('prof-upi')?.value||'').trim();
-  const area  = (document.getElementById('prof-area')?.value||'').trim();
+  const whatsapp = (document.getElementById('prof-whatsapp')?.value||'').trim();
+  const languages  = (document.getElementById('prof-languages')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const tdsPreference = !!document.getElementById('prof-tds')?.checked;
   try{
-    await agentFetch('agentUpdateProfile',{body:{upiId,area}});
-    AGENT.upiId = upiId;
-    AGENT.area  = area;
-    renderTools();
-    toast('Profile updated successfully.','success');
+    await agentFetch('agentUpdateProfile',{body:{whatsapp,languages,tdsPreference}});
+    AGENT.whatsapp = whatsapp;
+    AGENT.languages = languages;
+    AGENT.tdsPreference = tdsPreference;
+    renderProfile();
+    toast(t('profileUpdated'),'success');
   } catch(e){ toast(e.message,'error'); }
 }
 </script>

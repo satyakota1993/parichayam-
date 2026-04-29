@@ -239,6 +239,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="ni" onclick="nav('addons',this)"><span class="ni-i">⚡</span><span class="ni-l">Add-Ons</span></div>
     <div class="ni" onclick="nav('ads',this)"><span class="ni-i">📢</span><span class="ni-l">Advertisements</span><span class="nb nb-o">3</span></div>
     <div class="ni" onclick="nav('agents',this)"><span class="ni-i">🤝</span><span class="ni-l">Agents & Franchise</span><span class="nb nb-r" id="agent-nav-badge" style="display:none">0</span></div>
+    <div class="ni" onclick="nav('agentsettings',this)"><span class="ni-i">⚙</span><span class="ni-l">Agent Settings</span></div>
     <div class="ni" onclick="nav('alerts',this)"><span class="ni-i">⚠</span><span class="ni-l">Payment Alerts</span></div>
     <div class="ni" onclick="nav('refunds',this)"><span class="ni-i">↩</span><span class="ni-l">Refunds</span></div>
     <div class="ni" onclick="nav('reconciliation',this)"><span class="ni-i">↻</span><span class="ni-l">Reconciliation</span></div>
@@ -1528,6 +1529,77 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
       </div>
     </div>
 
+    <!-- ══ AGENT SETTINGS ══ -->
+    <div class="view" id="view-agentsettings">
+      <div class="grid4" style="margin-bottom:1rem">
+        <div class="sc"><div class="sc-lbl">Active Agents</div><div class="sc-val" id="as-active-agents">—</div><div class="sc-sub">Impacted by settings</div></div>
+        <div class="sc"><div class="sc-lbl">WhatsApp Cost</div><div class="sc-val" id="as-wa-cost">—</div><div class="sc-sub">Last 30 days estimate</div></div>
+        <div class="sc"><div class="sc-lbl">Tier Count</div><div class="sc-val" id="as-tier-count">—</div><div class="sc-sub">Enabled commission tiers</div></div>
+        <div class="sc"><div class="sc-lbl">Festivals</div><div class="sc-val" id="as-festival-count">—</div><div class="sc-sub">Outreach calendar</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Commission Settings</div>
+        <div class="grid4">
+          <div><div class="f-lbl">Default Commission Rate %</div><input class="f-inp" id="as-default-rate" type="number" min="0" max="100" step="0.01"></div>
+          <div><div class="f-lbl">Lock Period Days</div><input class="f-inp" id="as-lock-days" type="number" min="0"></div>
+          <div><div class="f-lbl">Minimum Payout Amount</div><input class="f-inp" id="as-min-payout" type="number" min="0"></div>
+          <div><div class="f-lbl">Payout SLA Business Days</div><input class="f-inp" id="as-payout-sla" type="number" min="1"></div>
+          <div><div class="f-lbl">TDS Threshold Per FY</div><input class="f-inp" id="as-tds-threshold" type="number" min="0"></div>
+          <div><div class="f-lbl">TDS Rate %</div><input class="f-inp" id="as-tds-rate" type="number" min="0" max="100" step="0.01"></div>
+        </div>
+        <button class="btn-primary" style="margin-top:.9rem" onclick="saveAgentCommissionSettings()">Save Changes</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tier Configuration</div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Tier</th><th>Min Referrals</th><th>Commission Rate</th><th>Monthly Bonus</th><th>Enabled</th><th></th></tr></thead>
+            <tbody id="as-tier-body"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+          <button class="btn-sm btn-gd" onclick="addAgentTierRow()">Add New Tier</button>
+          <button class="btn-primary" onclick="saveAgentTiers()">Save Changes</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Festival Calendar</div>
+        <div id="as-festival-list" style="display:flex;flex-direction:column;gap:.6rem"></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+          <button class="btn-sm btn-gd" onclick="addFestivalRow()">Add Festival</button>
+          <button class="btn-primary" onclick="saveAgentFestivals()">Save Festivals</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Leaderboard Toggle</div>
+          <div class="f-row"><div><div class="f-lbl">Leaderboard Enabled?</div></div><input id="as-lb-enabled" type="checkbox"></div>
+          <div class="f-row"><div><div class="f-lbl">Reset Period</div></div><select class="f-sel" id="as-lb-period"><option value="monthly">Monthly</option><option value="weekly">Weekly</option></select></div>
+          <div class="f-row"><div><div class="f-lbl">Ranking Metric</div></div><select class="f-sel" id="as-lb-metric"><option value="paid">Paid referrals</option><option value="signups">Signups</option><option value="commission">Commission</option></select></div>
+          <div class="f-row"><div><div class="f-lbl">Show Top</div></div><input class="f-inp" id="as-lb-showtop" type="number" min="1" style="width:90px"></div>
+          <div class="f-row"><div><div class="f-lbl">Anonymize Names</div></div><input id="as-lb-anon" type="checkbox"></div>
+          <div class="grid3">
+            <div><div class="f-lbl">Reward Top 1</div><input class="f-inp" id="as-lb-top1" type="number" min="0"></div>
+            <div><div class="f-lbl">Reward Top 3</div><input class="f-inp" id="as-lb-top3" type="number" min="0"></div>
+            <div><div class="f-lbl">Reward Top 10</div><input class="f-inp" id="as-lb-top10" type="number" min="0"></div>
+          </div>
+          <button class="btn-primary" style="margin-top:.8rem" onclick="saveAgentLeaderboard()">Save Changes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">WhatsApp Notification Toggle</div>
+          <div class="f-row"><div><div class="f-lbl">WhatsApp Notifications Enabled?</div></div><input id="as-wa-enabled" type="checkbox"></div>
+          <div id="as-wa-triggers" style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin:.7rem 0"></div>
+          <div style="font-size:.72rem;color:var(--mu);line-height:1.6" id="as-wa-estimate">Estimated monthly cost: —</div>
+          <button class="btn-primary" style="margin-top:.8rem" onclick="saveAgentWhatsappSettings()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ SERVICE PARTNERS ══ -->
     <div class="view" id="view-partners">
       <div class="card">
@@ -1738,6 +1810,7 @@ const ADMIN_VIEW_META = {
   addons:{ title:'Add-On Pricing', short:'Add-Ons', subtitle:'Tune connects, boosts, kundali packs, and other upsell pricing without hunting across tabs.', keywords:'add-ons addon connects packs boosts upsell pricing' },
   ads:{ title:'Advertisement Management', short:'Ads', subtitle:'Approve advertiser inventory, review slots, and keep revenue placements organized.', keywords:'ads advertisements banners placements advertisers approvals' },
   agents:{ title:'Agents & Franchise', short:'Agents', subtitle:'Monitor agent activity, referrals, payouts, and partner performance by city.', keywords:'agents franchise referral payouts partner cities commissions' },
+  agentsettings:{ title:'Agent Settings', short:'Agent Settings', subtitle:'Tune commission, tiers, festival outreach, leaderboard and WhatsApp costs.', keywords:'agent settings commission tiers whatsapp leaderboard festivals payout tds' },
   alerts:{ title:'Payment Alerts', short:'Alerts', subtitle:'Recover captured payments that need activation and review urgent support risk.', keywords:'payment alerts pending activations failures captured recovery' },
   refunds:{ title:'Manual Refunds', short:'Refunds', subtitle:'Issue Razorpay refunds and let the ledger create refund and clawback events.', keywords:'refunds razorpay clawback ledger member order' },
   reconciliation:{ title:'Payment Reconciliation', short:'Reconcile', subtitle:'Compare pending orders with Razorpay and queue missing activations.', keywords:'reconciliation payments orders razorpay retry queue' },
@@ -1949,6 +2022,7 @@ function nav(id,el){
   if(id==='customfields') renderCustomFieldsList();
   if(id==='gotramgr') renderGotras();
   if(id==='agents') { loadAgentsView(); }
+  if(id==='agentsettings') { loadAgentSettingsView(); }
   if(id==='alerts' || id==='refunds' || id==='reconciliation') loadPaymentResilienceView(id);
   if(id==='addons') { loadAddonPrices(); loadConnectPacks(); }
   if(id==='admgr' || id==='ads') renderAdList();
@@ -6261,6 +6335,156 @@ function _fmtDate(v) {
 
 function _fmtCur(v) {
   return 'Rs. ' + Number(v || 0).toLocaleString('en-IN');
+}
+
+let _agentSettingsCache = null;
+
+async function loadAgentSettingsView(){
+  const root = document.getElementById('view-agentsettings');
+  if(!root) return;
+  try{
+    _agentSettingsCache = await adminCloudFetch('getAgentSettings');
+    renderAgentSettingsView();
+  }catch(error){
+    toast('Unable to load agent settings: '+(error.message||error),'error');
+  }
+}
+
+function renderAgentSettingsView(){
+  const data = _agentSettingsCache || {};
+  const cs = data.commissionSettings || {};
+  const tiers = data.tiers || [];
+  const lb = data.leaderboardSettings || {};
+  const wa = data.whatsappSettings || {};
+  const setText = (id,value)=>{ const el=document.getElementById(id); if(el) el.textContent=value; };
+  setText('as-active-agents', data.activeAgentCount ?? '0');
+  setText('as-wa-cost', formatCurrency(data.notificationCost?.estimatedMonthlyCost || 0));
+  setText('as-tier-count', tiers.filter(t=>t.enabled!==false).length);
+  setText('as-festival-count', (data.festivals||[]).length);
+  const setVal = (id,value)=>{ const el=document.getElementById(id); if(el) el.value=value ?? ''; };
+  setVal('as-default-rate', cs.defaultCommissionRate);
+  setVal('as-lock-days', cs.lockPeriodDays);
+  setVal('as-min-payout', cs.minimumPayoutAmount);
+  setVal('as-payout-sla', cs.payoutSlaBusinessDays);
+  setVal('as-tds-threshold', cs.tdsThreshold);
+  setVal('as-tds-rate', cs.tdsRate);
+  renderAgentTierRows(tiers);
+  renderFestivalRows(data.festivals || []);
+  const lbEnabled = document.getElementById('as-lb-enabled'); if(lbEnabled) lbEnabled.checked = lb.enabled !== false;
+  setVal('as-lb-period', lb.resetPeriod || 'monthly');
+  setVal('as-lb-metric', lb.metric || 'paid');
+  setVal('as-lb-showtop', lb.showTop || 10);
+  const lbAnon = document.getElementById('as-lb-anon'); if(lbAnon) lbAnon.checked = lb.anonymizeNames !== false;
+  setVal('as-lb-top1', lb.rewards?.top1 || 0);
+  setVal('as-lb-top3', lb.rewards?.top3 || 0);
+  setVal('as-lb-top10', lb.rewards?.top10 || 0);
+  const waEnabled = document.getElementById('as-wa-enabled'); if(waEnabled) waEnabled.checked = wa.enabled === true;
+  const triggerBox = document.getElementById('as-wa-triggers');
+  if(triggerBox){
+    const triggers = wa.triggers || {};
+    triggerBox.innerHTML = Object.keys(triggers).map(key=>
+      '<label style="display:flex;gap:.4rem;align-items:center;font-size:.72rem;color:var(--mu)"><input type="checkbox" class="as-wa-trigger" data-trigger="'+_esc(key)+'" '+(triggers[key]!==false?'checked':'')+'> '+_esc(key)+'</label>'
+    ).join('');
+  }
+  setText('as-wa-estimate','Estimated monthly cost: '+formatCurrency(data.notificationCost?.estimatedMonthlyCost || 0)+' based on last 30 days');
+}
+
+function renderAgentTierRows(tiers){
+  const body = document.getElementById('as-tier-body');
+  if(!body) return;
+  body.innerHTML = (tiers||[]).map((tier,idx)=>
+    '<tr data-tier-row><td><input class="f-inp as-tier-name" value="'+_esc(tier.name||'')+'"></td><td><input class="f-inp as-tier-min" type="number" min="0" value="'+Number(tier.minPaidReferrals||0)+'"></td><td><input class="f-inp as-tier-rate" type="number" min="0" max="100" step="0.01" value="'+Number(tier.commissionRate||0)+'"></td><td><input class="f-inp as-tier-bonus" type="number" min="0" value="'+Number(tier.monthlyBonus||0)+'"></td><td><input class="as-tier-enabled" type="checkbox" '+(tier.enabled!==false?'checked':'')+'></td><td><button class="btn-sm btn-rd" onclick="deleteAgentTierRow(this)">Delete</button></td></tr>'
+  ).join('');
+}
+
+function collectAgentTierRows(){
+  return Array.from(document.querySelectorAll('[data-tier-row]')).map((row,idx)=>({
+    id: (row.querySelector('.as-tier-name')?.value || ('tier-'+idx)).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
+    name: row.querySelector('.as-tier-name')?.value || ('Tier '+(idx+1)),
+    minPaidReferrals: Number(row.querySelector('.as-tier-min')?.value || 0),
+    commissionRate: Number(row.querySelector('.as-tier-rate')?.value || 0),
+    monthlyBonus: Number(row.querySelector('.as-tier-bonus')?.value || 0),
+    enabled: row.querySelector('.as-tier-enabled')?.checked !== false,
+  }));
+}
+
+function addAgentTierRow(){
+  const tiers = collectAgentTierRows();
+  tiers.push({ id:'new-tier', name:'New Tier', minPaidReferrals:0, commissionRate:15, monthlyBonus:0, enabled:true });
+  renderAgentTierRows(tiers);
+}
+
+function deleteAgentTierRow(btn){
+  if(!confirm('Delete this tier? Agents keep existing ledger history.')) return;
+  btn.closest('tr')?.remove();
+}
+
+function renderFestivalRows(festivals){
+  const el = document.getElementById('as-festival-list');
+  if(!el) return;
+  el.innerHTML = (festivals||[]).map((f,idx)=>festivalRowHtml(f,idx)).join('');
+}
+
+function festivalRowHtml(f,idx){
+  return '<div data-festival-row style="background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:.85rem">'
+    +'<div class="grid4"><div><div class="f-lbl">Name</div><input class="f-inp as-f-name" value="'+_esc(f.name||'')+'"></div><div><div class="f-lbl">Date</div><input class="f-inp as-f-date" type="date" value="'+_esc(String(f.date||'').slice(0,10))+'"></div><div><div class="f-lbl">Promo Code</div><input class="f-inp as-f-promo" value="'+_esc(f.promoCode||'')+'"></div><div><div class="f-lbl">Reminder Days Before</div><input class="f-inp as-f-reminder" type="number" min="0" value="'+Number(f.reminderDaysBefore||7)+'"></div></div>'
+    +'<div class="grid2" style="margin-top:.65rem"><div><div class="f-lbl">English Message</div><textarea class="f-inp as-f-en" rows="2">'+_esc(f.englishMessage||'')+'</textarea></div><div><div class="f-lbl">Telugu Message</div><textarea class="f-inp as-f-te" rows="2">'+_esc(f.teluguMessage||'')+'</textarea></div></div>'
+    +'<div style="display:flex;gap:.6rem;align-items:center;margin-top:.55rem"><label style="font-size:.72rem;color:var(--mu)"><input class="as-f-enabled" type="checkbox" '+(f.enabled!==false?'checked':'')+'> Enabled</label><button class="btn-sm btn-rd" onclick="this.closest(\'[data-festival-row]\').remove()">Delete</button></div></div>';
+}
+
+function collectFestivalRows(){
+  return Array.from(document.querySelectorAll('[data-festival-row]')).map((row,idx)=>({
+    id: (row.querySelector('.as-f-name')?.value || ('festival-'+idx)).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
+    name: row.querySelector('.as-f-name')?.value || ('Festival '+(idx+1)),
+    date: row.querySelector('.as-f-date')?.value || '',
+    promoCode: row.querySelector('.as-f-promo')?.value || '',
+    reminderDaysBefore: Number(row.querySelector('.as-f-reminder')?.value || 7),
+    englishMessage: row.querySelector('.as-f-en')?.value || '',
+    teluguMessage: row.querySelector('.as-f-te')?.value || '',
+    enabled: row.querySelector('.as-f-enabled')?.checked !== false,
+  }));
+}
+
+function addFestivalRow(){
+  const el = document.getElementById('as-festival-list');
+  if(el) el.insertAdjacentHTML('beforeend', festivalRowHtml({ name:'New Festival', date:new Date().toISOString().slice(0,10), enabled:true, reminderDaysBefore:7 }, Date.now()));
+}
+
+function collectAgentCommissionSettings(){
+  return {
+    defaultCommissionRate:Number(document.getElementById('as-default-rate')?.value||15),
+    lockPeriodDays:Number(document.getElementById('as-lock-days')?.value||30),
+    minimumPayoutAmount:Number(document.getElementById('as-min-payout')?.value||500),
+    payoutSlaBusinessDays:Number(document.getElementById('as-payout-sla')?.value||3),
+    tdsThreshold:Number(document.getElementById('as-tds-threshold')?.value||25000),
+    tdsRate:Number(document.getElementById('as-tds-rate')?.value||5),
+  };
+}
+
+async function saveAgentSettingsPayload(payload, message){
+  if(!confirm('These changes affect '+(_agentSettingsCache?.activeAgentCount||0)+' active agents. Continue?')) return;
+  await adminCloudFetch('adminSaveAgentSettings',{ body: payload });
+  toast(message || 'Agent settings saved', 'success');
+  await loadAgentSettingsView();
+}
+
+async function saveAgentCommissionSettings(){ await saveAgentSettingsPayload({ commissionSettings: collectAgentCommissionSettings() }, 'Commission settings saved'); }
+async function saveAgentTiers(){ await saveAgentSettingsPayload({ tiers: collectAgentTierRows() }, 'Tier configuration saved'); }
+async function saveAgentFestivals(){ await saveAgentSettingsPayload({ festivals: collectFestivalRows() }, 'Festival calendar saved'); }
+async function saveAgentLeaderboard(){
+  await saveAgentSettingsPayload({ leaderboardSettings:{
+    enabled:document.getElementById('as-lb-enabled')?.checked === true,
+    resetPeriod:document.getElementById('as-lb-period')?.value || 'monthly',
+    metric:document.getElementById('as-lb-metric')?.value || 'paid',
+    showTop:Number(document.getElementById('as-lb-showtop')?.value||10),
+    anonymizeNames:document.getElementById('as-lb-anon')?.checked !== false,
+    rewards:{ top1:Number(document.getElementById('as-lb-top1')?.value||0), top3:Number(document.getElementById('as-lb-top3')?.value||0), top10:Number(document.getElementById('as-lb-top10')?.value||0) },
+  } }, 'Leaderboard settings saved');
+}
+async function saveAgentWhatsappSettings(){
+  const triggers = {};
+  document.querySelectorAll('.as-wa-trigger').forEach(el=>{ triggers[el.dataset.trigger] = el.checked; });
+  await saveAgentSettingsPayload({ whatsappSettings:{ enabled:document.getElementById('as-wa-enabled')?.checked === true, triggers } }, 'WhatsApp settings saved');
 }
 
 let _paymentResilienceCache = {

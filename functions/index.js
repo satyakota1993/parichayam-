@@ -71,6 +71,113 @@ const DEFAULT_SERVER_AUTH_SETTINGS = {
   mode: "firebase-password",
   requireSignupOtp: false,
 };
+const AGENT_TIERS_KEY = "parichayam_agent_tiers";
+const AGENT_COMMISSION_SETTINGS_KEY = "parichayam_agent_commission_settings";
+const LEADERBOARD_SETTINGS_KEY = "parichayam_leaderboard_settings";
+const WHATSAPP_NOTIFICATION_SETTINGS_KEY = "parichayam_whatsapp_notification_settings";
+const WHATSAPP_TEMPLATES_COLLECTION = "whatsappTemplates";
+const FESTIVALS_COLLECTION = "festivals";
+const MARKETING_MATERIALS_COLLECTION = "marketingMaterials";
+const NOTIFICATION_LOG_COLLECTION = "notificationLog";
+const DEFAULT_AGENT_COMMISSION_SETTINGS = {
+  defaultCommissionRate: 15,
+  lockPeriodDays: 30,
+  minimumPayoutAmount: 500,
+  payoutSlaBusinessDays: 3,
+  tdsThreshold: 25000,
+  tdsRate: 5,
+};
+const DEFAULT_AGENT_TIERS = [
+  { id: "bronze", name: "Bronze", minPaidReferrals: 0, commissionRate: 15, monthlyBonus: 0, enabled: true },
+  { id: "silver", name: "Silver", minPaidReferrals: 10, commissionRate: 17, monthlyBonus: 0, enabled: true },
+  { id: "gold", name: "Gold", minPaidReferrals: 25, commissionRate: 20, monthlyBonus: 0, enabled: true },
+  { id: "platinum", name: "Platinum", minPaidReferrals: 50, commissionRate: 22, monthlyBonus: 2000, enabled: true },
+];
+const DEFAULT_LEADERBOARD_SETTINGS = {
+  enabled: true,
+  metric: "paid",
+  resetPeriod: "monthly",
+  showTop: 10,
+  anonymizeNames: true,
+  rewards: { top1: 5000, top3: 2000, top10: 500 },
+};
+const DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS = {
+  enabled: false,
+  estimatedCostPerMessage: 0.5,
+  triggers: {
+    newSignup: true,
+    paymentReceived: true,
+    commissionUnlocked: true,
+    payoutProcessed: true,
+    weeklyDigest: true,
+    festivalReminder: true,
+    tierUpgrade: true,
+    refundApplied: true,
+  },
+};
+const DEFAULT_WHATSAPP_TEMPLATES = [
+  {
+    id: "newSignup",
+    title: "New referral signup",
+    trigger: "newSignup",
+    language: "telugu",
+    enabled: true,
+    message: "{{agent_name}}, మీ రిఫరల్ {{member_name}} సైన్ అప్ చేశారు. వారికి స్వాగతం చెప్పండి!",
+    englishMessage: "{{agent_name}}, your referral {{member_name}} just signed up. Say hi to them!",
+  },
+  {
+    id: "paymentReceived",
+    title: "Referral paid",
+    trigger: "paymentReceived",
+    language: "telugu",
+    enabled: true,
+    message: "{{agent_name}}, {{member_name}} చెల్లింపు పూర్తి చేశారు. మీ కమిషన్ {{commission_amount}} 30 రోజుల తర్వాత అందుబాటులోకి వస్తుంది.",
+    englishMessage: "{{agent_name}}, {{member_name}} paid successfully. Your commission {{commission_amount}} unlocks after 30 days.",
+  },
+  {
+    id: "commissionUnlocked",
+    title: "Commission unlocked",
+    trigger: "commissionUnlocked",
+    language: "telugu",
+    enabled: true,
+    message: "{{agent_name}}, మీ కమిషన్ {{commission_amount}} ఇప్పుడు విత్‌డ్రాకు అందుబాటులో ఉంది.",
+    englishMessage: "{{agent_name}}, your commission {{commission_amount}} is now available to withdraw.",
+  },
+  {
+    id: "payoutProcessed",
+    title: "Payout processed",
+    trigger: "payoutProcessed",
+    language: "telugu",
+    enabled: true,
+    message: "{{agent_name}}, మీ పేఅవుట్ {{payout_amount}} ప్రాసెస్ అయింది. బ్యాంక్ రిఫరెన్స్: {{bank_reference}}.",
+    englishMessage: "{{agent_name}}, your payout {{payout_amount}} has been processed. Bank ref: {{bank_reference}}.",
+  },
+  {
+    id: "weeklyDigest",
+    title: "Weekly digest",
+    trigger: "weeklyDigest",
+    language: "telugu",
+    enabled: true,
+    message: "{{agent_name}}, ఈ వారం: {{signups}} సైన్‌అప్స్, {{paid}} చెల్లింపులు, {{commission_amount}} కమిషన్.",
+    englishMessage: "{{agent_name}}, this week: {{signups}} signups, {{paid}} paid, {{commission_amount}} commission.",
+  },
+];
+const DEFAULT_FESTIVALS = [
+  { id: "sankranti", name: "Sankranti", date: "2027-01-14", enabled: true, reminderDaysBefore: 7, promoCode: "SANKRANTI", englishMessage: "Celebrate Sankranti by helping families find trusted Telugu matches on Parichayam.", teluguMessage: "సంక్రాంతి సందర్భంగా పరిచయం ద్వారా మంచి తెలుగు సంబంధాలను కుటుంబాలకు పరిచయం చేయండి." },
+  { id: "ugadi", name: "Ugadi", date: "2027-04-08", enabled: true, reminderDaysBefore: 7, promoCode: "UGADI", englishMessage: "New year, new beginnings. Share Parichayam with families looking for verified Telugu matches.", teluguMessage: "ఉగాది కొత్త ఆరంభం. నమ్మకమైన తెలుగు సంబంధాల కోసం పరిచయాన్ని షేర్ చేయండి." },
+  { id: "akshaya-tritiya", name: "Akshaya Tritiya", date: "2027-05-14", enabled: true, reminderDaysBefore: 7, promoCode: "AKSHAYA", englishMessage: "Akshaya Tritiya is a beautiful time to start marriage conversations with trusted families.", teluguMessage: "అక్షయ తృతీయ రోజున నమ్మకమైన కుటుంబాలతో వివాహ పరిచయాలు ప్రారంభించండి." },
+  { id: "brahmotsavam", name: "Brahmotsavam", date: "2026-09-16", enabled: true, reminderDaysBefore: 7, promoCode: "BRAHMOTSAVAM", englishMessage: "Share Parichayam during Brahmotsavam season with families seeking community-first matches.", teluguMessage: "బ్రహ్మోత్సవం సమయంలో కమ్యూనిటీ ఆధారిత సంబంధాల కోసం పరిచయాన్ని షేర్ చేయండి." },
+  { id: "karthika-masam", name: "Karthika Masam", date: "2026-11-10", enabled: true, reminderDaysBefore: 7, promoCode: "KARTHIKA", englishMessage: "Karthika Masam is an auspicious time to help families begin match discussions.", teluguMessage: "కార్తీక మాసం కుటుంబాలకు సంబంధాల చర్చలు ప్రారంభించడానికి శుభ సమయం." },
+  { id: "margashira", name: "Margashira", date: "2026-12-11", enabled: true, reminderDaysBefore: 7, promoCode: "MARGASHIRA", englishMessage: "Share verified Telugu matrimony options with families this Margashira season.", teluguMessage: "ఈ మార్గశిర కాలంలో ధృవీకరించిన తెలుగు వివాహ పరిచయాలను కుటుంబాలతో పంచుకోండి." },
+  { id: "shravana", name: "Shravana", date: "2026-08-15", enabled: true, reminderDaysBefore: 7, promoCode: "SHRAVANA", englishMessage: "Shravana is a meaningful season for family introductions. Share Parichayam today.", teluguMessage: "శ్రావణం కుటుంబ పరిచయాలకు మంచి కాలం. ఈరోజే పరిచయాన్ని షేర్ చేయండి." },
+  { id: "vasanta-panchami", name: "Vasanta Panchami", date: "2027-02-11", enabled: true, reminderDaysBefore: 7, promoCode: "VASANTA", englishMessage: "Invite families to begin a hopeful match journey this Vasanta Panchami.", teluguMessage: "వసంత పంచమి సందర్భంగా మంచి సంబంధాల ప్రయాణం ప్రారంభించడానికి కుటుంబాలను ఆహ్వానించండి." }
+];
+const DEFAULT_MARKETING_MATERIALS = [
+  { id: "whatsapp-dp", title: "WhatsApp DP", type: "image", enabled: true, description: "Square profile image placeholder", url: "assets/agent-whatsapp-dp-placeholder.svg" },
+  { id: "a4-flyer", title: "A4 Flyer", type: "image", enabled: true, description: "Printable flyer placeholder", url: "assets/agent-a4-flyer-placeholder.svg" },
+  { id: "business-card", title: "Business Card", type: "image", enabled: true, description: "Business card placeholder", url: "assets/agent-business-card-placeholder.svg" },
+  { id: "instagram-story", title: "Instagram Story", type: "image", enabled: true, description: "Vertical story placeholder", url: "assets/agent-instagram-story-placeholder.svg" }
+];
 const PUBLIC_PROFILE_ALLOWED_FIELDS = [
   "profileNumber",
   "name",
@@ -1290,7 +1397,12 @@ async function resolveRevenueAgentForMember(memberData, transaction) {
     const agentRef = db.collection(AGENTS_COLLECTION).doc(directAgentId);
     const agentSnap = transaction ? await transaction.get(agentRef) : await agentRef.get();
     if (agentSnap.exists) {
-      return { id: agentSnap.id, data: agentSnap.data() || {}, referralCode: String(agentSnap.data()?.referralCode || "") };
+      const agentData = agentSnap.data() || {};
+      return {
+        id: agentSnap.id,
+        data: await attachAgentTierSnapshot(agentSnap.id, agentData, transaction),
+        referralCode: String(agentData?.referralCode || ""),
+      };
     }
   }
 
@@ -1301,7 +1413,7 @@ async function resolveRevenueAgentForMember(memberData, transaction) {
   const snap = transaction ? await transaction.get(query) : await query.get();
   if (snap.empty) return { id: "", data: null, referralCode };
   const doc = snap.docs[0];
-  return { id: doc.id, data: doc.data() || {}, referralCode };
+  return { id: doc.id, data: await attachAgentTierSnapshot(doc.id, doc.data() || {}, transaction), referralCode };
 }
 
 function buildMembershipRevenueEvents(params) {
@@ -1320,7 +1432,7 @@ function buildMembershipRevenueEvents(params) {
   const lockExpiresAt = revenueTimestampFromMs(lockExpiresMs);
   const isLocked = lockExpiresMs > Date.now();
   const agentId = String(agentInfo.id || "").trim();
-  const agentCommissionRate = agentId ? REFERRED_AGENT_COMMISSION_RATE : 0;
+  const agentCommissionRate = agentId ? getAgentCommissionRateForRevenue(agentInfo.data || {}) : 0;
   const agentCommissionAmount = agentId ? roundMoney(chargeAmount * agentCommissionRate) : 0;
   const basePrice = computeRevenueBasePrice(chargeAmount, orderData, memberData);
   const discountApplied = Math.max(0, Math.round(Number(orderData.discountApplied || memberData.discountApplied || 0)));
@@ -1332,6 +1444,8 @@ function buildMembershipRevenueEvents(params) {
     discountApplied,
     paymentGateway: "razorpay",
     notes: String(params.notes || `Membership activated for ${memberData.name || memberData.fullName || memberId}`),
+    memberPaymentAmount: chargeAmount,
+    agentTierName: String(agentInfo.data?.currentTier || agentInfo.data?.commissionTier || ""),
     ...(params.ipAddress ? { ipAddress: String(params.ipAddress) } : {}),
     ...(agentInfo.referralCode ? { agentReferralCode: String(agentInfo.referralCode) } : {}),
   };
@@ -3397,9 +3511,9 @@ const AGENT_ACTIVITY_COLLECTION = "agentActivity";
 
 const VALID_AGENT_STATUSES = ["active", "suspended", "deactivated"];
 const VALID_LEAD_STAGES = ["new", "contacted", "interested", "registered", "profile_complete", "payment_pending", "converted", "inactive"];
-const DEFAULT_AGENT_COMMISSION_PERCENT = 25;
+const DEFAULT_AGENT_COMMISSION_PERCENT = DEFAULT_AGENT_COMMISSION_SETTINGS.defaultCommissionRate;
 const AGENT_MIN_PAYOUT = 500;
-const LEGACY_COMMISSION_PERCENT_BY_TIER = { starter: 20, standard: 25, premium: 30, custom: 25 };
+const LEGACY_COMMISSION_PERCENT_BY_TIER = { bronze: 15, silver: 17, gold: 20, platinum: 22, starter: 15, standard: 17, premium: 20, custom: 15 };
 
 function generateReferralCode(name, city) {
   const n = String(name || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6) || "AGENT";
@@ -3547,30 +3661,22 @@ exports.calculateAgentCommissions = onRequest({ region: "us-central1" }, async (
       }
     }
 
-    const nowMs = Date.now();
-    const snap = await db.collection(REVENUE_EVENTS_COLLECTION)
-      .where("agentId", "==", requestedAgentId)
-      .where("eventType", "==", "agent_commission")
-      .where("status", "==", "recorded")
-      .get();
-
-    let lockedAmount = 0;
-    let unlockedAmount = 0;
-    snap.forEach((doc) => {
-      const event = doc.data() || {};
-      const commissionAmount = Math.max(0, roundMoney(event.agentCommissionAmount || event.amount || 0));
-      const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
-      if (lockExpiresMs > nowMs) lockedAmount += commissionAmount;
-      else unlockedAmount += commissionAmount;
-    });
+    const balance = await computeAgentBalance(requestedAgentId);
 
     sendJson(req, res, 200, {
       ok: true,
       agentId: requestedAgentId,
-      totalUnpaidCommissions: roundMoney(lockedAmount + unlockedAmount),
-      lockedAmount: roundMoney(lockedAmount),
-      unlockedAmount: roundMoney(unlockedAmount),
-      eventCount: snap.size,
+      totalUnpaidCommissions: roundMoney(balance.lockedAmount + balance.availableBeforePending),
+      totalLifetimeEarned: balance.totalLifetimeEarned,
+      lockedAmount: balance.lockedAmount,
+      unlockedAmount: balance.unlockedAmount,
+      availableToWithdraw: balance.availableToWithdraw,
+      alreadyPaidOut: balance.alreadyPaidOut,
+      pendingPayoutAmount: balance.pendingPayoutAmount,
+      disputedAmount: balance.disputedAmount,
+      nextUnlockAt: balance.nextUnlockAt,
+      nextUnlockDays: balance.nextUnlockDays,
+      eventCount: balance.eventCount,
       asOf: nowIso(),
     });
   } catch (error) {
@@ -3633,6 +3739,410 @@ async function logAgentActivity(agentId, type, description, extra) {
   });
 }
 
+function cleanPercent(value, fallback) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(parsed * 100) / 100));
+}
+
+function normalizeAgentCommissionSettings(raw) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  return {
+    defaultCommissionRate: cleanPercent(source.defaultCommissionRate, DEFAULT_AGENT_COMMISSION_SETTINGS.defaultCommissionRate),
+    lockPeriodDays: Math.max(0, parseInt(source.lockPeriodDays ?? DEFAULT_AGENT_COMMISSION_SETTINGS.lockPeriodDays, 10) || DEFAULT_AGENT_COMMISSION_SETTINGS.lockPeriodDays),
+    minimumPayoutAmount: Math.max(0, Math.round(Number(source.minimumPayoutAmount ?? DEFAULT_AGENT_COMMISSION_SETTINGS.minimumPayoutAmount) || DEFAULT_AGENT_COMMISSION_SETTINGS.minimumPayoutAmount)),
+    payoutSlaBusinessDays: Math.max(1, parseInt(source.payoutSlaBusinessDays ?? DEFAULT_AGENT_COMMISSION_SETTINGS.payoutSlaBusinessDays, 10) || DEFAULT_AGENT_COMMISSION_SETTINGS.payoutSlaBusinessDays),
+    tdsThreshold: Math.max(0, Math.round(Number(source.tdsThreshold ?? DEFAULT_AGENT_COMMISSION_SETTINGS.tdsThreshold) || DEFAULT_AGENT_COMMISSION_SETTINGS.tdsThreshold)),
+    tdsRate: cleanPercent(source.tdsRate, DEFAULT_AGENT_COMMISSION_SETTINGS.tdsRate),
+  };
+}
+
+function normalizeAgentTiers(raw) {
+  const sourceList = Array.isArray(raw?.tiers) ? raw.tiers : Array.isArray(raw) ? raw : DEFAULT_AGENT_TIERS;
+  const normalized = sourceList.map((tier, idx) => {
+    const name = String(tier?.name || DEFAULT_AGENT_TIERS[idx]?.name || `Tier ${idx + 1}`).trim();
+    return {
+      id: String(tier?.id || name || `tier-${idx + 1}`).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `tier-${idx + 1}`,
+      name,
+      minPaidReferrals: Math.max(0, parseInt(tier?.minPaidReferrals ?? tier?.minReferrals ?? DEFAULT_AGENT_TIERS[idx]?.minPaidReferrals ?? 0, 10) || 0),
+      commissionRate: cleanPercent(tier?.commissionRate ?? tier?.commissionPercent, DEFAULT_AGENT_TIERS[idx]?.commissionRate ?? DEFAULT_AGENT_COMMISSION_SETTINGS.defaultCommissionRate),
+      monthlyBonus: Math.max(0, Math.round(Number(tier?.monthlyBonus ?? DEFAULT_AGENT_TIERS[idx]?.monthlyBonus ?? 0) || 0)),
+      enabled: tier?.enabled !== false,
+    };
+  }).filter((tier) => tier.enabled || tier.minPaidReferrals === 0);
+  if (!normalized.length) return DEFAULT_AGENT_TIERS;
+  return normalized.sort((a, b) => a.minPaidReferrals - b.minPaidReferrals);
+}
+
+function normalizeLeaderboardSettings(raw) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const rewards = source.rewards && typeof source.rewards === "object" ? source.rewards : {};
+  const metric = String(source.metric || DEFAULT_LEADERBOARD_SETTINGS.metric).trim().toLowerCase();
+  const resetPeriod = String(source.resetPeriod || DEFAULT_LEADERBOARD_SETTINGS.resetPeriod).trim().toLowerCase();
+  return {
+    enabled: source.enabled !== false,
+    metric: ["signups", "paid", "commission"].includes(metric) ? metric : DEFAULT_LEADERBOARD_SETTINGS.metric,
+    resetPeriod: ["weekly", "monthly"].includes(resetPeriod) ? resetPeriod : DEFAULT_LEADERBOARD_SETTINGS.resetPeriod,
+    showTop: Math.max(1, Math.min(50, parseInt(source.showTop ?? DEFAULT_LEADERBOARD_SETTINGS.showTop, 10) || DEFAULT_LEADERBOARD_SETTINGS.showTop)),
+    anonymizeNames: source.anonymizeNames !== false,
+    rewards: {
+      top1: Math.max(0, Math.round(Number(rewards.top1 ?? DEFAULT_LEADERBOARD_SETTINGS.rewards.top1) || 0)),
+      top3: Math.max(0, Math.round(Number(rewards.top3 ?? DEFAULT_LEADERBOARD_SETTINGS.rewards.top3) || 0)),
+      top10: Math.max(0, Math.round(Number(rewards.top10 ?? DEFAULT_LEADERBOARD_SETTINGS.rewards.top10) || 0)),
+    },
+  };
+}
+
+function normalizeWhatsappNotificationSettings(raw) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const triggers = source.triggers && typeof source.triggers === "object" ? source.triggers : {};
+  return {
+    enabled: source.enabled === true,
+    estimatedCostPerMessage: Math.max(0, Number(source.estimatedCostPerMessage ?? DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.estimatedCostPerMessage) || DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.estimatedCostPerMessage),
+    triggers: {
+      ...DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.triggers,
+      ...triggers,
+    },
+  };
+}
+
+async function readAppStateValue(key, fallback, transaction) {
+  const ref = db.collection(APP_STATE_COLLECTION).doc(key);
+  const snap = transaction ? await transaction.get(ref) : await ref.get();
+  if (!snap.exists) return fallback;
+  const data = snap.data() || {};
+  return data.value !== undefined ? data.value : fallback;
+}
+
+async function readAgentCommissionSettings(transaction) {
+  return normalizeAgentCommissionSettings(await readAppStateValue(AGENT_COMMISSION_SETTINGS_KEY, DEFAULT_AGENT_COMMISSION_SETTINGS, transaction));
+}
+
+async function readAgentTierConfig(transaction) {
+  return normalizeAgentTiers(await readAppStateValue(AGENT_TIERS_KEY, { tiers: DEFAULT_AGENT_TIERS }, transaction));
+}
+
+async function readLeaderboardSettings(transaction) {
+  return normalizeLeaderboardSettings(await readAppStateValue(LEADERBOARD_SETTINGS_KEY, DEFAULT_LEADERBOARD_SETTINGS, transaction));
+}
+
+async function readWhatsappNotificationSettings(transaction) {
+  return normalizeWhatsappNotificationSettings(await readAppStateValue(WHATSAPP_NOTIFICATION_SETTINGS_KEY, DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS, transaction));
+}
+
+function chooseAgentTier(tiers, paidReferralCount) {
+  const enabled = normalizeAgentTiers(tiers).filter((tier) => tier.enabled !== false);
+  const count = Math.max(0, parseInt(paidReferralCount, 10) || 0);
+  let current = enabled[0] || DEFAULT_AGENT_TIERS[0];
+  for (const tier of enabled) {
+    if (count >= tier.minPaidReferrals) current = tier;
+  }
+  const next = enabled.find((tier) => tier.minPaidReferrals > count) || null;
+  return { current, next };
+}
+
+async function countAgentPaidReferrals(agentId, transaction) {
+  if (!agentId) return 0;
+  const query = db.collection(REVENUE_EVENTS_COLLECTION)
+    .where("agentId", "==", agentId)
+    .where("eventType", "==", "agent_commission")
+    .where("status", "==", "recorded");
+  try {
+    const snap = transaction ? await transaction.get(query) : await query.get();
+    return snap.size;
+  } catch (error) {
+    logger.warn("countAgentPaidReferrals failed; falling back to agent totals", { agentId, message: error?.message || String(error || "") });
+    return 0;
+  }
+}
+
+async function attachAgentTierSnapshot(agentId, agentData, transaction) {
+  const settings = await readAgentCommissionSettings(transaction);
+  const tiers = await readAgentTierConfig(transaction);
+  const paidReferralCount = Math.max(
+    Number(agentData?.paidReferralCount || 0),
+    Number(agentData?.totalConversions || 0),
+    await countAgentPaidReferrals(agentId, transaction)
+  );
+  const { current } = chooseAgentTier(tiers, paidReferralCount);
+  return {
+    ...(agentData || {}),
+    paidReferralCount,
+    currentTier: current.name,
+    commissionTier: current.name,
+    tierId: current.id,
+    tierMonthlyBonus: current.monthlyBonus,
+    commissionPercent: cleanPercent(agentData?.commissionPercent ?? current.commissionRate, settings.defaultCommissionRate),
+  };
+}
+
+function getAgentCommissionRateForRevenue(agentData) {
+  const percent = cleanPercent(
+    agentData?.commissionPercent ?? agentData?.commissionRate ?? agentData?.tierCommissionRate,
+    DEFAULT_AGENT_COMMISSION_SETTINGS.defaultCommissionRate
+  );
+  return Math.round((percent / 100) * 10000) / 10000;
+}
+
+function firstName(value) {
+  return String(value || "").trim().split(/\s+/)[0] || "";
+}
+
+function initialsForName(value) {
+  const parts = String(value || "Agent").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "A.";
+  if (parts.length === 1) return `${parts[0].slice(0, 1).toUpperCase()}.`;
+  return `${parts[0].slice(0, 1).toUpperCase()}.${parts[parts.length - 1].slice(0, 1).toUpperCase()}.`;
+}
+
+function currentPeriodStartMs(resetPeriod) {
+  const now = new Date();
+  if (resetPeriod === "weekly") {
+    const day = now.getDay();
+    const diff = (day + 6) % 7;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff).getTime();
+  }
+  return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+}
+
+async function listSeededCollection(collectionName, defaults) {
+  const collection = db.collection(collectionName);
+  const snap = await collection.limit(100).get();
+  if (snap.empty) {
+    const batch = db.batch();
+    defaults.forEach((item) => {
+      batch.set(collection.doc(String(item.id)), { ...item, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    });
+    await batch.commit();
+    return defaults;
+  }
+  return snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+}
+
+async function ensureAgentDashboardDefaults() {
+  const stateDefaults = [
+    [AGENT_COMMISSION_SETTINGS_KEY, normalizeAgentCommissionSettings(DEFAULT_AGENT_COMMISSION_SETTINGS)],
+    [AGENT_TIERS_KEY, { tiers: normalizeAgentTiers(DEFAULT_AGENT_TIERS) }],
+    [LEADERBOARD_SETTINGS_KEY, normalizeLeaderboardSettings(DEFAULT_LEADERBOARD_SETTINGS)],
+    [WHATSAPP_NOTIFICATION_SETTINGS_KEY, normalizeWhatsappNotificationSettings(DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS)],
+  ];
+  const batch = db.batch();
+  const snaps = await Promise.all(stateDefaults.map(([key]) => db.collection(APP_STATE_COLLECTION).doc(key).get()));
+  snaps.forEach((snap, idx) => {
+    if (snap.exists) return;
+    const [key, value] = stateDefaults[idx];
+    batch.set(db.collection(APP_STATE_COLLECTION).doc(key), {
+      value,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: "system_phase_2_10_seed",
+    }, { merge: true });
+  });
+  await batch.commit();
+  await Promise.all([
+    listSeededCollection(FESTIVALS_COLLECTION, DEFAULT_FESTIVALS),
+    listSeededCollection(WHATSAPP_TEMPLATES_COLLECTION, DEFAULT_WHATSAPP_TEMPLATES),
+    listSeededCollection(MARKETING_MATERIALS_COLLECTION, DEFAULT_MARKETING_MATERIALS),
+  ]);
+}
+
+async function computeAgentBalance(agentId) {
+  const [settings, commissionSnap, clawbackSnap, payoutSnap] = await Promise.all([
+    readAgentCommissionSettings(),
+    db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("agentId", "==", agentId)
+      .where("eventType", "==", "agent_commission")
+      .get(),
+    db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("agentId", "==", agentId)
+      .where("eventType", "==", "commission_clawback")
+      .get(),
+    db.collection("agentPayoutRequests")
+      .where("agentId", "==", agentId)
+      .get(),
+  ]);
+
+  const nowMs = Date.now();
+  let totalEarned = 0;
+  let lockedAmount = 0;
+  let unlockedAmount = 0;
+  let disputedAmount = 0;
+  let eventCount = 0;
+  let nextUnlockAt = null;
+  let nextUnlockMs = 0;
+
+  commissionSnap.forEach((doc) => {
+    const event = doc.data() || {};
+    const amount = Math.max(0, roundMoney(event.agentCommissionAmount || event.amount || 0));
+    const status = String(event.status || "recorded").toLowerCase();
+    if (status === "disputed") {
+      disputedAmount += amount;
+      return;
+    }
+    if (!["recorded", "settled"].includes(status)) return;
+    eventCount++;
+    totalEarned += amount;
+    const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
+    if (lockExpiresMs > nowMs) {
+      lockedAmount += amount;
+      if (!nextUnlockMs || lockExpiresMs < nextUnlockMs) {
+        nextUnlockMs = lockExpiresMs;
+        nextUnlockAt = event.lockExpiresAt || revenueTimestampFromMs(lockExpiresMs);
+      }
+    } else {
+      unlockedAmount += amount;
+    }
+  });
+
+  clawbackSnap.forEach((doc) => {
+    const event = doc.data() || {};
+    const status = String(event.status || "recorded").toLowerCase();
+    if (!["recorded", "settled"].includes(status)) return;
+    const amount = roundMoney(event.agentCommissionAmount || event.amount || 0);
+    totalEarned += amount;
+    unlockedAmount += amount;
+  });
+
+  let totalPaidOut = 0;
+  let pendingPayoutAmount = 0;
+  payoutSnap.forEach((doc) => {
+    const payout = doc.data() || {};
+    const amount = Math.max(0, roundMoney(payout.amount || payout.requestedAmount || 0));
+    const status = String(payout.status || "").toLowerCase();
+    if (status === "paid" || status === "settled") totalPaidOut += amount;
+    if (["requested", "approved", "processing"].includes(status)) pendingPayoutAmount += amount;
+  });
+
+  const availableBeforePending = roundMoney(unlockedAmount);
+  const availableBalance = roundMoney(Math.max(0, availableBeforePending - totalPaidOut - pendingPayoutAmount));
+  return {
+    totalEarned: roundMoney(totalEarned),
+    totalLifetimeEarned: roundMoney(totalEarned),
+    lockedAmount: roundMoney(Math.max(0, lockedAmount)),
+    unlockedAmount: roundMoney(Math.max(0, unlockedAmount)),
+    availableBeforePending: roundMoney(Math.max(0, availableBeforePending - totalPaidOut)),
+    totalPaidOut: roundMoney(totalPaidOut),
+    alreadyPaidOut: roundMoney(totalPaidOut),
+    pendingPayoutAmount: roundMoney(pendingPayoutAmount),
+    availableBalance,
+    availableToWithdraw: availableBalance,
+    disputedAmount: roundMoney(disputedAmount),
+    eventCount,
+    nextUnlockAt,
+    nextUnlockDays: nextUnlockMs ? Math.max(0, Math.ceil((nextUnlockMs - nowMs) / (24 * 60 * 60 * 1000))) : 0,
+    minimumPayoutAmount: settings.minimumPayoutAmount,
+    payoutSlaBusinessDays: settings.payoutSlaBusinessDays,
+  };
+}
+
+async function buildAgentTierProgress(agentId, agentData, paidReferralCount) {
+  const tiers = await readAgentTierConfig();
+  const count = Math.max(0, parseInt(paidReferralCount ?? agentData?.paidReferralCount ?? agentData?.totalConversions, 10) || 0);
+  const { current, next } = chooseAgentTier(tiers, count);
+  const remaining = next ? Math.max(0, next.minPaidReferrals - count) : 0;
+  const span = next ? Math.max(1, next.minPaidReferrals - current.minPaidReferrals) : Math.max(1, count || 1);
+  const progress = next ? Math.min(100, Math.round(((count - current.minPaidReferrals) / span) * 100)) : 100;
+  return {
+    currentTier: current,
+    nextTier: next,
+    paidReferrals: count,
+    remainingToNextTier: remaining,
+    progressPercent: progress,
+    message: next ? `${remaining} more referrals to reach ${next.name}` : `Top tier reached: ${current.name}`,
+  };
+}
+
+async function buildAgentLeaderboard(agentId) {
+  const settings = await readLeaderboardSettings();
+  if (!settings.enabled) return { enabled: false, settings };
+  const periodStart = currentPeriodStartMs(settings.resetPeriod);
+  const agentsSnap = await db.collection(AGENTS_COLLECTION).where("status", "==", "active").get();
+  const agentMap = new Map();
+  agentsSnap.forEach((doc) => {
+    agentMap.set(doc.id, { id: doc.id, ...(doc.data() || {}), score: 0, paid: 0, signups: 0, commission: 0 });
+  });
+
+  if (settings.metric === "signups") {
+    const leadsSnap = await db.collection(AGENT_LEADS_COLLECTION).get();
+    leadsSnap.forEach((doc) => {
+      const lead = doc.data() || {};
+      const id = String(lead.agentId || "");
+      const entry = agentMap.get(id);
+      if (!entry) return;
+      if (parseTimestampMs(lead.createdAt) < periodStart) return;
+      entry.signups++;
+      entry.score++;
+    });
+  } else {
+    const eventsSnap = await db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("eventType", "==", "agent_commission")
+      .where("status", "==", "recorded")
+      .get();
+    eventsSnap.forEach((doc) => {
+      const event = doc.data() || {};
+      const id = String(event.agentId || "");
+      const entry = agentMap.get(id);
+      if (!entry) return;
+      if (parseTimestampMs(event.createdAt) < periodStart) return;
+      const amount = Math.max(0, roundMoney(event.agentCommissionAmount || event.amount || 0));
+      entry.paid++;
+      entry.commission += amount;
+      entry.score += settings.metric === "commission" ? amount : 1;
+    });
+  }
+
+  const ranked = Array.from(agentMap.values())
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => (b.score - a.score) || String(a.name || "").localeCompare(String(b.name || "")));
+  const index = ranked.findIndex((entry) => entry.id === agentId);
+  const activeAgents = Math.max(ranked.length, agentMap.size);
+  const rank = index >= 0 ? index + 1 : activeAgents || 0;
+  return {
+    enabled: true,
+    settings,
+    rank,
+    activeAgents,
+    percentile: rank && activeAgents ? Math.max(1, Math.round((rank / activeAgents) * 100)) : 0,
+    score: index >= 0 ? ranked[index].score : 0,
+    top: ranked.slice(0, settings.showTop).map((entry) => ({
+      initials: settings.anonymizeNames ? initialsForName(entry.name) : String(entry.name || "Agent"),
+      score: entry.score,
+      paid: entry.paid,
+      signups: entry.signups,
+      commission: roundMoney(entry.commission),
+    })),
+  };
+}
+
+async function buildAgentMonthlyPerformance(agentId) {
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const [leadsSnap, eventsSnap] = await Promise.all([
+    db.collection(AGENT_LEADS_COLLECTION).where("agentId", "==", agentId).get(),
+    db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("agentId", "==", agentId)
+      .where("eventType", "==", "agent_commission")
+      .where("status", "==", "recorded")
+      .get(),
+  ]);
+  let signups = 0;
+  leadsSnap.forEach((doc) => {
+    if (parseTimestampMs(doc.data()?.createdAt) >= monthStart) signups++;
+  });
+  let paid = 0;
+  let commission = 0;
+  eventsSnap.forEach((doc) => {
+    const event = doc.data() || {};
+    if (parseTimestampMs(event.createdAt) < monthStart) return;
+    paid++;
+    commission += Math.max(0, roundMoney(event.agentCommissionAmount || event.amount || 0));
+  });
+  return {
+    signups,
+    paid,
+    conversionRate: signups ? Math.round((paid / signups) * 100) : 0,
+    commission: roundMoney(commission),
+  };
+}
+
 // ── Admin: Create Agent ──
 exports.adminCreateAgent = onRequest({ region: "us-central1" }, async (req, res) => {
   setCorsHeaders(req, res);
@@ -3646,8 +4156,10 @@ exports.adminCreateAgent = onRequest({ region: "us-central1" }, async (req, res)
     const city = String(req.body?.city || "").trim();
     const area = String(req.body?.area || "").trim();
     const state = String(req.body?.state || "").trim();
+    const commissionSettings = await readAgentCommissionSettings();
+    const defaultTier = chooseAgentTier(await readAgentTierConfig(), 0).current;
     const commissionPercent = clampCommissionPercent(
-      req.body?.commissionPercent !== undefined ? req.body?.commissionPercent : DEFAULT_AGENT_COMMISSION_PERCENT
+      req.body?.commissionPercent !== undefined ? req.body?.commissionPercent : (defaultTier?.commissionRate ?? commissionSettings.defaultCommissionRate)
     );
     const upiId = String(req.body?.upiId || "").trim();
     const adminNotes = String(req.body?.notes || "").trim();
@@ -3684,6 +4196,11 @@ exports.adminCreateAgent = onRequest({ region: "us-central1" }, async (req, res)
       referralCode,
       commissionType: "percent",
       commissionPercent,
+      commissionTier: defaultTier?.name || "Bronze",
+      currentTier: defaultTier?.name || "Bronze",
+      tierId: defaultTier?.id || "bronze",
+      tierMonthlyBonus: defaultTier?.monthlyBonus || 0,
+      paidReferralCount: 0,
       upiId,
       totalEarned: 0, totalPaidOut: 0, totalLeads: 0, totalConversions: 0,
       lastActiveAt: FieldValue.serverTimestamp(),
@@ -4228,6 +4745,7 @@ exports.agentGetDashboard = onRequest({ region: "us-central1" }, async (req, res
   if (req.method === "OPTIONS") { res.status(204).send(""); return; }
   try {
     const { agent } = await verifyAgentUser(req);
+    await ensureAgentDashboardDefaults();
 
     // Update lastActiveAt
     await db.collection(AGENTS_COLLECTION).doc(agent.id).set({ lastActiveAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -4250,6 +4768,16 @@ exports.agentGetDashboard = onRequest({ region: "us-central1" }, async (req, res
 
     // Balance
     const balance = await computeAgentBalance(agent.id);
+    const [commissionSettings, tiers, leaderboard, thisMonth, festivals, whatsappTemplates, marketingMaterials] = await Promise.all([
+      readAgentCommissionSettings(),
+      readAgentTierConfig(),
+      buildAgentLeaderboard(agent.id),
+      buildAgentMonthlyPerformance(agent.id),
+      listSeededCollection(FESTIVALS_COLLECTION, DEFAULT_FESTIVALS),
+      listSeededCollection(WHATSAPP_TEMPLATES_COLLECTION, DEFAULT_WHATSAPP_TEMPLATES),
+      listSeededCollection(MARKETING_MATERIALS_COLLECTION, DEFAULT_MARKETING_MATERIALS),
+    ]);
+    const tierProgress = await buildAgentTierProgress(agent.id, agent, balance.eventCount || agent.totalConversions || 0);
 
     // Recent activity
     const activity = [];
@@ -4292,20 +4820,31 @@ exports.agentGetDashboard = onRequest({ region: "us-central1" }, async (req, res
 
     sendJson(req, res, 200, {
       ok: true,
-      agent: { ...agent, ...balance },
+      agent: { ...agent, ...balance, currentTier: tierProgress.currentTier.name, commissionTier: tierProgress.currentTier.name, commissionPercent: tierProgress.currentTier.commissionRate },
       kpi: {
         totalLeads: enrichedLeads.length,
         converted,
         conversionRate,
-        thisMonthEarnings: balance.totalEarned, // simplified for now
+        thisMonthEarnings: thisMonth.commission,
         availableBalance: balance.availableBalance,
         pendingPayoutAmount: balance.pendingPayoutAmount,
       },
+      commissionSummary: balance,
+      settings: {
+        commission: commissionSettings,
+        tiers,
+      },
+      tierProgress,
+      thisMonth,
+      leaderboard,
+      festivals: festivals.filter((item) => item.enabled !== false),
+      whatsappTemplates: whatsappTemplates.filter((item) => item.enabled !== false),
+      marketingMaterials: marketingMaterials.filter((item) => item.enabled !== false),
       stageCounts,
       followUps: followUps.slice(0, 10),
       recentActivity: activity,
       payoutHistory: payoutHistory.slice(0, 10),
-      minimumPayoutAmount: AGENT_MIN_PAYOUT,
+      minimumPayoutAmount: commissionSettings.minimumPayoutAmount,
     });
   } catch (error) {
     logger.error("agentGetDashboard failed", error);
@@ -4459,8 +4998,9 @@ exports.agentRequestPayout = onRequest({ region: "us-central1" }, async (req, re
 
     // Server-side balance calculation
     const balance = await computeAgentBalance(agent.id);
-    if (balance.availableBalance < AGENT_MIN_PAYOUT) {
-      sendJson(req, res, 400, { message: "Minimum payout is Rs " + AGENT_MIN_PAYOUT + ". Your available balance is Rs " + balance.availableBalance + "." });
+    const minimumPayoutAmount = Number(balance.minimumPayoutAmount || AGENT_MIN_PAYOUT);
+    if (balance.availableBalance < minimumPayoutAmount) {
+      sendJson(req, res, 400, { message: "Minimum payout is Rs " + minimumPayoutAmount + ". Your available balance is Rs " + balance.availableBalance + "." });
       return;
     }
 
@@ -4504,6 +5044,13 @@ exports.agentUpdateProfile = onRequest({ region: "us-central1" }, async (req, re
     const updates = { updatedAt: FieldValue.serverTimestamp() };
     if (req.body?.upiId !== undefined) updates.upiId = String(req.body.upiId).trim();
     if (req.body?.area !== undefined) updates.area = String(req.body.area).trim();
+    if (req.body?.whatsapp !== undefined) updates.whatsapp = normalizePhone(req.body.whatsapp || "");
+    if (req.body?.languages !== undefined) {
+      updates.languages = Array.isArray(req.body.languages)
+        ? req.body.languages.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 6)
+        : String(req.body.languages || "").split(",").map((item) => item.trim()).filter(Boolean).slice(0, 6);
+    }
+    if (req.body?.tdsPreference !== undefined) updates.tdsPreference = req.body.tdsPreference === true;
     await db.collection(AGENTS_COLLECTION).doc(agent.id).set(updates, { merge: true });
     const updated = await db.collection(AGENTS_COLLECTION).doc(agent.id).get();
     sendJson(req, res, 200, { ok: true, agent: { id: agent.id, ...updated.data() } });
@@ -4538,6 +5085,249 @@ exports.agentChangePassword = onRequest({ region: "us-central1" }, async (req, r
     logger.error("agentChangePassword failed", error);
     sendJson(req, res, error.status || 500, { message: error.message || "Unable to update password." });
   }
+});
+
+function currentFinancialYearStartMs() {
+  const now = new Date();
+  const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return new Date(year, 3, 1).getTime();
+}
+
+async function loadMembersForLedger(memberIds) {
+  const unique = Array.from(new Set((memberIds || []).filter(Boolean).map(String)));
+  if (!unique.length) return new Map();
+  const refs = unique.map((id) => db.collection(MEMBERS_COLLECTION).doc(id));
+  const docs = await db.getAll(...refs);
+  const map = new Map();
+  docs.forEach((doc) => {
+    if (doc.exists) map.set(doc.id, doc.data() || {});
+  });
+  return map;
+}
+
+async function buildAgentLedger(agentId) {
+  const [eventsSnap, payoutsSnap] = await Promise.all([
+    db.collection(REVENUE_EVENTS_COLLECTION).where("agentId", "==", agentId).get(),
+    db.collection("agentPayoutRequests").where("agentId", "==", agentId).get(),
+  ]);
+  const events = eventsSnap.docs
+    .map((doc) => ({ id: doc.id, ...(doc.data() || {}) }))
+    .filter((event) => ["agent_commission", "commission_clawback"].includes(String(event.eventType || "")))
+    .sort((a, b) => parseTimestampMs(b.createdAt) - parseTimestampMs(a.createdAt));
+  const memberMap = await loadMembersForLedger(events.map((event) => event.memberId));
+  const nowMs = Date.now();
+  const fyStart = currentFinancialYearStartMs();
+  let fyTotal = 0;
+  const rows = events.map((event) => {
+    const amount = roundMoney(event.agentCommissionAmount || event.amount || 0);
+    const rate = Math.round(Number(event.agentCommissionRate || 0) * 10000) / 100;
+    const member = memberMap.get(String(event.memberId || "")) || {};
+    const createdMs = parseTimestampMs(event.createdAt);
+    const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
+    const status = String(event.status || "recorded").toLowerCase();
+    const isClawback = String(event.eventType || "") === "commission_clawback";
+    if (createdMs >= fyStart && status !== "disputed") fyTotal += amount;
+    const memberPayment = Math.max(0, Math.round(Number(event.metadata?.memberPaymentAmount || (rate ? Math.abs(amount) / (rate / 100) : 0)) || 0));
+    return {
+      id: event.id,
+      date: event.createdAt || "",
+      memberId: String(event.memberId || ""),
+      memberName: firstName(member.name || member.fullName || event.metadata?.memberName || ""),
+      tier: String(event.metadata?.memberTier || event.metadata?.agentTierName || ""),
+      memberPayment,
+      commissionRate: rate,
+      commissionAmount: amount,
+      lockStatus: isClawback ? "Disputed" : status === "disputed" ? "Disputed" : lockExpiresMs > nowMs ? "Locked" : "Available",
+      lockExpiresAt: event.lockExpiresAt || null,
+      orderId: String(event.orderId || ""),
+      paymentId: String(event.paymentId || ""),
+      eventType: String(event.eventType || ""),
+      status,
+    };
+  });
+  const payoutHistory = payoutsSnap.docs
+    .map((doc) => ({ id: doc.id, ...(doc.data() || {}) }))
+    .sort((a, b) => parseTimestampMs(b.requestedAt || b.createdAt) - parseTimestampMs(a.requestedAt || a.createdAt));
+  return {
+    rows,
+    payoutHistory,
+    taxSummary: {
+      financialYearStart: revenueTimestampFromMs(fyStart),
+      totalThisFy: roundMoney(fyTotal),
+    },
+  };
+}
+
+exports.agentGetCommissionLedger = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const { agent } = await verifyAgentUser(req);
+    const ledger = await buildAgentLedger(agent.id);
+    sendJson(req, res, 200, { ok: true, ...ledger });
+  } catch (error) {
+    logger.error("agentGetCommissionLedger failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load commission ledger." });
+  }
+});
+
+async function readNotificationCostSummary() {
+  const sinceMs = Date.now() - (30 * 24 * 60 * 60 * 1000);
+  const snap = await db.collection(NOTIFICATION_LOG_COLLECTION).limit(500).get();
+  let count = 0;
+  let cost = 0;
+  snap.forEach((doc) => {
+    const log = doc.data() || {};
+    if (parseTimestampMs(log.createdAt) < sinceMs) return;
+    count++;
+    cost += Number(log.estimatedCost || 0);
+  });
+  return { last30DaysCount: count, estimatedMonthlyCost: roundMoney(cost) };
+}
+
+exports.getAgentSettings = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const [memberSnap, agentSnap] = await Promise.all([
+      db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get(),
+      db.collection(AGENTS_COLLECTION).doc(authUser.uid).get(),
+    ]);
+    const isAdminUser = memberSnap.exists && String(memberSnap.data()?.role || "").toUpperCase() === "ADMIN";
+    if (!isAdminUser && !agentSnap.exists) {
+      sendJson(req, res, 403, { message: "Agent or admin access required." });
+      return;
+    }
+    await ensureAgentDashboardDefaults();
+    const [commissionSettings, tiers, leaderboardSettings, whatsappSettings, festivals, whatsappTemplates, marketingMaterials, costSummary, activeAgentsSnap] = await Promise.all([
+      readAgentCommissionSettings(),
+      readAgentTierConfig(),
+      readLeaderboardSettings(),
+      readWhatsappNotificationSettings(),
+      listSeededCollection(FESTIVALS_COLLECTION, DEFAULT_FESTIVALS),
+      listSeededCollection(WHATSAPP_TEMPLATES_COLLECTION, DEFAULT_WHATSAPP_TEMPLATES),
+      listSeededCollection(MARKETING_MATERIALS_COLLECTION, DEFAULT_MARKETING_MATERIALS),
+      readNotificationCostSummary(),
+      db.collection(AGENTS_COLLECTION).where("status", "==", "active").get(),
+    ]);
+    sendJson(req, res, 200, {
+      ok: true,
+      commissionSettings,
+      tiers,
+      leaderboardSettings,
+      whatsappSettings,
+      festivals,
+      whatsappTemplates,
+      marketingMaterials,
+      notificationCost: costSummary,
+      activeAgentCount: activeAgentsSnap.size,
+    });
+  } catch (error) {
+    logger.error("getAgentSettings failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load agent settings." });
+  }
+});
+
+function cleanDocForAdminCollection(item, defaults) {
+  const id = String(item?.id || "").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  return {
+    ...(defaults || {}),
+    ...(item || {}),
+    id: id || String(defaults?.id || Date.now()),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+}
+
+exports.adminSaveAgentSettings = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const batch = db.batch();
+    if (req.body?.commissionSettings !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(AGENT_COMMISSION_SETTINGS_KEY), {
+        value: normalizeAgentCommissionSettings(req.body.commissionSettings),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.tiers !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(AGENT_TIERS_KEY), {
+        value: { tiers: normalizeAgentTiers(req.body.tiers) },
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.leaderboardSettings !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(LEADERBOARD_SETTINGS_KEY), {
+        value: normalizeLeaderboardSettings(req.body.leaderboardSettings),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.whatsappSettings !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(WHATSAPP_NOTIFICATION_SETTINGS_KEY), {
+        value: normalizeWhatsappNotificationSettings(req.body.whatsappSettings),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    (Array.isArray(req.body?.festivals) ? req.body.festivals : []).forEach((festival) => {
+      const doc = cleanDocForAdminCollection(festival, {});
+      batch.set(db.collection(FESTIVALS_COLLECTION).doc(doc.id), doc, { merge: true });
+    });
+    (Array.isArray(req.body?.whatsappTemplates) ? req.body.whatsappTemplates : []).forEach((template) => {
+      const doc = cleanDocForAdminCollection(template, {});
+      batch.set(db.collection(WHATSAPP_TEMPLATES_COLLECTION).doc(doc.id), doc, { merge: true });
+    });
+    (Array.isArray(req.body?.marketingMaterials) ? req.body.marketingMaterials : []).forEach((material) => {
+      const doc = cleanDocForAdminCollection(material, {});
+      batch.set(db.collection(MARKETING_MATERIALS_COLLECTION).doc(doc.id), doc, { merge: true });
+    });
+    await batch.commit();
+    await ensureAgentDashboardDefaults();
+    sendJson(req, res, 200, { ok: true });
+  } catch (error) {
+    logger.error("adminSaveAgentSettings failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to save agent settings." });
+  }
+});
+
+exports.updateAgentTiers = onSchedule({
+  schedule: "15 2 * * *",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const tiers = await readAgentTierConfig();
+  const agentsSnap = await db.collection(AGENTS_COLLECTION).get();
+  const updates = [];
+  for (const doc of agentsSnap.docs) {
+    const agent = doc.data() || {};
+    const paidReferralCount = await countAgentPaidReferrals(doc.id);
+    const { current } = chooseAgentTier(tiers, paidReferralCount);
+    const previousTier = String(agent.currentTier || agent.commissionTier || "");
+    updates.push(db.collection(AGENTS_COLLECTION).doc(doc.id).set({
+      paidReferralCount,
+      currentTier: current.name,
+      commissionTier: current.name,
+      tierId: current.id,
+      commissionPercent: current.commissionRate,
+      tierMonthlyBonus: current.monthlyBonus,
+      tierUpdatedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }));
+    if (previousTier && previousTier !== current.name) {
+      updates.push(logAgentActivity(doc.id, "tier_upgraded", `Congratulations, you're now ${current.name}!`, { previousTier, currentTier: current.name }));
+      updates.push(sendAgentNotification(doc.id, "tierUpgrade", {
+        agent_name: agent.name || "Agent",
+        tier_name: current.name,
+      }));
+    }
+  }
+  await Promise.all(updates);
+  logger.info("updateAgentTiers completed", { count: agentsSnap.size });
 });
 
 // ── Public: Submit Agent Application ──
@@ -4623,8 +5413,10 @@ exports.adminApproveAgentApplication = onRequest({ region: "us-central1" }, asyn
     }
 
     const referralCode = await ensureUniqueReferralCode(generateReferralCode(appData.name, appData.city));
+    const commissionSettings = await readAgentCommissionSettings();
+    const defaultTier = chooseAgentTier(await readAgentTierConfig(), 0).current;
     const commissionPercent = clampCommissionPercent(
-      req.body?.commissionPercent !== undefined ? req.body?.commissionPercent : DEFAULT_AGENT_COMMISSION_PERCENT
+      req.body?.commissionPercent !== undefined ? req.body?.commissionPercent : (defaultTier?.commissionRate ?? commissionSettings.defaultCommissionRate)
     );
     const agentDoc = {
       name: appData.name || "", mobile, email, city: appData.city || "", area: "", state: appData.state || "",
@@ -4632,6 +5424,11 @@ exports.adminApproveAgentApplication = onRequest({ region: "us-central1" }, asyn
       referralCode,
       commissionType: "percent",
       commissionPercent,
+      commissionTier: defaultTier?.name || "Bronze",
+      currentTier: defaultTier?.name || "Bronze",
+      tierId: defaultTier?.id || "bronze",
+      tierMonthlyBonus: defaultTier?.monthlyBonus || 0,
+      paidReferralCount: 0,
       upiId: "", totalEarned: 0, totalPaidOut: 0, totalLeads: 0, totalConversions: 0,
       lastActiveAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
@@ -4674,6 +5471,7 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
       if (agentSnap.empty) return;
       const agentDoc = agentSnap.docs[0];
       const agentId = agentDoc.id;
+      const agentTierData = await attachAgentTierSnapshot(agentId, agentDoc.data() || {});
       const phone = normalizePhone(memberData?.phone || "");
 
       // Check if lead already exists for this member
@@ -4728,7 +5526,7 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
           }
 
           if (newStage === "converted" && currentLead.commissionCredited !== true) {
-            creditedSnapshot = computeCommissionSnapshot(agentDoc.data() || {}, trustedPaidAmount);
+            creditedSnapshot = computeCommissionSnapshot(agentTierData, trustedPaidAmount);
             creditedConversionNow = true;
             updates.stage = "converted";
             updates.commissionCredited = true;
@@ -4756,7 +5554,7 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
         }
       } else {
         // Create new lead
-        const commissionSnapshot = computeCommissionSnapshot(agentDoc.data() || {}, trustedPaidAmount);
+        const commissionSnapshot = computeCommissionSnapshot(agentTierData, trustedPaidAmount);
         const isConverted = newStage === "converted";
         const leadDoc = {
           agentId,
@@ -4795,5 +5593,350 @@ exports.syncAgentLeadOnMemberWrite = onDocumentWritten(
     } catch (error) {
       logger.error("syncAgentLeadOnMemberWrite failed", { memberUid, agentRefCode, error: error?.message || error });
     }
+  }
+);
+
+function renderTemplateMessage(template, tokens) {
+  const source = String(template?.message || template?.englishMessage || template?.text || "").trim();
+  const fallback = String(tokens?.fallbackMessage || "{{agent_name}}, you have a Parichayam agent update.").trim();
+  const raw = source || fallback;
+  return raw.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key) => String(tokens?.[key] ?? ""));
+}
+
+async function loadNotificationTemplate(trigger) {
+  const doc = await db.collection(WHATSAPP_TEMPLATES_COLLECTION).doc(trigger).get();
+  if (doc.exists) return { id: doc.id, ...(doc.data() || {}) };
+  const snap = await db.collection(WHATSAPP_TEMPLATES_COLLECTION).where("trigger", "==", trigger).limit(1).get();
+  if (!snap.empty) return { id: snap.docs[0].id, ...(snap.docs[0].data() || {}) };
+  return DEFAULT_WHATSAPP_TEMPLATES.find((item) => item.trigger === trigger || item.id === trigger) || null;
+}
+
+function normalizeWhatsappPhone(value) {
+  const phone = normalizePhone(value || "");
+  return phone.length >= 10 ? phone : "";
+}
+
+async function sendWhatsappViaProvider(phone, message, trigger) {
+  const provider = String(process.env.WHATSAPP_API_PROVIDER || "").trim().toLowerCase();
+  const apiKey = String(process.env.WHATSAPP_API_KEY || "").trim();
+  const sender = String(process.env.WHATSAPP_SENDER_NUMBER || "").trim();
+  if (!provider || !apiKey || !phone) {
+    const error = new Error("WhatsApp API is not configured.");
+    error.code = "whatsapp/not-configured";
+    throw error;
+  }
+  if (provider === "twilio") {
+    const sid = String(process.env.TWILIO_ACCOUNT_SID || "").trim();
+    const token = String(process.env.TWILIO_AUTH_TOKEN || apiKey).trim();
+    if (!sid || !token || !sender) {
+      const error = new Error("Twilio WhatsApp credentials are incomplete.");
+      error.code = "whatsapp/not-configured";
+      throw error;
+    }
+    const body = new URLSearchParams();
+    body.set("From", sender.startsWith("whatsapp:") ? sender : `whatsapp:${sender}`);
+    body.set("To", `whatsapp:+91${phone}`);
+    body.set("Body", message);
+    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: "Basic " + Buffer.from(`${sid}:${token}`).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    if (!response.ok) throw new Error(`Twilio WhatsApp failed (${response.status})`);
+    return response.json().catch(() => ({ ok: true }));
+  }
+  const response = await fetch("https://api.interakt.ai/v1/public/message/", {
+    method: "POST",
+    headers: {
+      Authorization: "Basic " + apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      countryCode: "+91",
+      phoneNumber: phone,
+      callbackData: trigger,
+      type: "Text",
+      data: { message },
+    }),
+  });
+  if (!response.ok) throw new Error(`Interakt WhatsApp failed (${response.status})`);
+  return response.json().catch(() => ({ ok: true }));
+}
+
+async function logNotification(entry) {
+  await db.collection(NOTIFICATION_LOG_COLLECTION).add({
+    ...entry,
+    estimatedCost: Number(entry.estimatedCost || 0),
+    createdAt: FieldValue.serverTimestamp(),
+  });
+}
+
+async function fallbackEmailNotification(agent, trigger, message, reason) {
+  const webhook = String(process.env.FALLBACK_EMAIL_WEBHOOK_URL || "").trim();
+  if (!webhook) {
+    await writeAdminAlert({
+      type: "agent_notification_email_fallback_missing",
+      severity: "warning",
+      title: "Agent notification email fallback unavailable",
+      message: `Trigger ${trigger} could not send WhatsApp and no email webhook is configured. Reason: ${reason}`,
+      relatedCollection: AGENTS_COLLECTION,
+      relatedId: agent.id || "",
+      source: "agent_notifications",
+    });
+    return { ok: false, skipped: true };
+  }
+  const response = await fetch(webhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      to: agent.email || "",
+      subject: `Parichayam agent update: ${trigger}`,
+      text: message,
+      agentId: agent.id || "",
+    }),
+  });
+  if (!response.ok) throw new Error(`Email fallback failed (${response.status})`);
+  return { ok: true };
+}
+
+async function sendAgentNotification(agentId, trigger, tokens = {}) {
+  const settings = await readWhatsappNotificationSettings();
+  const enabled = settings.enabled === true && settings.triggers?.[trigger] !== false;
+  const agentSnap = await db.collection(AGENTS_COLLECTION).doc(agentId).get();
+  if (!agentSnap.exists) return { ok: false, skipped: true, reason: "agent_missing" };
+  const agent = { id: agentSnap.id, ...(agentSnap.data() || {}) };
+  const template = await loadNotificationTemplate(trigger);
+  const message = String(tokens.messageOverride || renderTemplateMessage(template, {
+    fallbackMessage: `${agent.name || "Agent"}, you have a Parichayam update.`,
+    agent_name: agent.name || "Agent",
+    ...tokens,
+  }));
+  const phone = normalizeWhatsappPhone(agent.whatsapp || agent.mobile || "");
+  if (!enabled) {
+    await logNotification({ agentId, trigger, channel: "whatsapp", status: "disabled", phone, messagePreview: message.slice(0, 160) });
+    return { ok: false, skipped: true, reason: "disabled" };
+  }
+  try {
+    const providerResult = await sendWhatsappViaProvider(phone, message, trigger);
+    await logNotification({
+      agentId,
+      trigger,
+      channel: "whatsapp",
+      provider: String(process.env.WHATSAPP_API_PROVIDER || "interakt"),
+      status: "sent",
+      phone,
+      messagePreview: message.slice(0, 160),
+      estimatedCost: settings.estimatedCostPerMessage,
+      providerResult,
+    });
+    return { ok: true, channel: "whatsapp" };
+  } catch (whatsappError) {
+    try {
+      const emailResult = await fallbackEmailNotification(agent, trigger, message, whatsappError.message || String(whatsappError));
+      await logNotification({
+        agentId,
+        trigger,
+        channel: "email",
+        status: emailResult.ok ? "sent" : "skipped",
+        fallbackFrom: "whatsapp",
+        error: whatsappError.message || String(whatsappError),
+        messagePreview: message.slice(0, 160),
+      });
+      return { ok: emailResult.ok, channel: "email", fallback: true };
+    } catch (emailError) {
+      await logNotification({
+        agentId,
+        trigger,
+        channel: "none",
+        status: "failed",
+        error: `${whatsappError.message || whatsappError}; ${emailError.message || emailError}`,
+        messagePreview: message.slice(0, 160),
+      });
+      await writeAdminAlert({
+        type: "agent_notification_failed",
+        severity: "warning",
+        title: "Agent notification failed",
+        message: `Trigger ${trigger} failed for agent ${agent.name || agentId}.`,
+        relatedCollection: AGENTS_COLLECTION,
+        relatedId: agentId,
+        source: "agent_notifications",
+      });
+      return { ok: false, error: emailError.message || String(emailError) };
+    }
+  }
+}
+
+async function findAgentForMemberReferral(memberData) {
+  const directAgentId = String(memberData?.referredByAgentUid || memberData?.agentUid || memberData?.agentId || "").trim();
+  if (directAgentId) {
+    const snap = await db.collection(AGENTS_COLLECTION).doc(directAgentId).get();
+    if (snap.exists) return { id: snap.id, ...(snap.data() || {}) };
+  }
+  const code = normalizeAgentRefId(memberData?.referredByAgentRefId || memberData?.agentRefId || "");
+  if (!code) return null;
+  const snap = await db.collection(AGENTS_COLLECTION).where("referralCode", "==", code).limit(1).get();
+  if (snap.empty) return null;
+  return { id: snap.docs[0].id, ...(snap.docs[0].data() || {}) };
+}
+
+exports.notifyAgentNewSignup = onDocumentWritten(
+  { document: `${MEMBERS_COLLECTION}/{uid}`, region: "us-central1" },
+  async (event) => {
+    const before = event.data?.before;
+    const after = event.data?.after;
+    if (before?.exists || !after?.exists) return;
+    const member = after.data() || {};
+    const agent = await findAgentForMemberReferral(member);
+    if (!agent) return;
+    await sendAgentNotification(agent.id, "newSignup", {
+      agent_name: agent.name || "Agent",
+      member_name: firstName(member.name || member.fullName || "your referral"),
+    });
+  }
+);
+
+exports.notifyAgentPaymentReceived = onDocumentWritten(
+  { document: `${MEMBERS_COLLECTION}/{uid}`, region: "us-central1" },
+  async (event) => {
+    const before = event.data?.before?.data() || {};
+    const after = event.data?.after?.data() || {};
+    if (before.isPaid === true || after.isPaid !== true) return;
+    const agent = await findAgentForMemberReferral(after);
+    if (!agent) return;
+    const paidAmount = Math.max(0, Math.round(Number(after.lastPaymentAmount || 0)));
+    const commissionAmount = roundMoney(paidAmount * getAgentCommissionRateForRevenue(await attachAgentTierSnapshot(agent.id, agent)));
+    await sendAgentNotification(agent.id, "paymentReceived", {
+      agent_name: agent.name || "Agent",
+      member_name: firstName(after.name || after.fullName || "your referral"),
+      commission_amount: `₹${Math.round(commissionAmount).toLocaleString("en-IN")}`,
+    });
+  }
+);
+
+exports.notifyAgentPayoutProcessed = onDocumentWritten(
+  { document: "agentPayoutRequests/{requestId}", region: "us-central1" },
+  async (event) => {
+    const before = event.data?.before?.data() || {};
+    const afterSnap = event.data?.after;
+    if (!afterSnap?.exists) return;
+    const after = afterSnap.data() || {};
+    if (String(before.status || "").toLowerCase() === "paid" || String(after.status || "").toLowerCase() !== "paid") return;
+    const agentId = String(after.agentId || "");
+    if (!agentId) return;
+    await sendAgentNotification(agentId, "payoutProcessed", {
+      payout_amount: `₹${Math.round(Number(after.amount || 0)).toLocaleString("en-IN")}`,
+      bank_reference: String(after.bankReference || "shared by admin"),
+    });
+  }
+);
+
+exports.notifyAgentCommissionUnlocked = onSchedule({
+  schedule: "30 8 * * *",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const nowMs = Date.now();
+  const snap = await db.collection(REVENUE_EVENTS_COLLECTION)
+    .where("eventType", "==", "agent_commission")
+    .where("status", "==", "recorded")
+    .get();
+  const sends = [];
+  for (const doc of snap.docs) {
+    const event = doc.data() || {};
+    const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
+    if (!lockExpiresMs || lockExpiresMs > nowMs || event.commissionUnlockedNotifiedAt) continue;
+    const agentId = String(event.agentId || "");
+    if (!agentId) continue;
+    sends.push(sendAgentNotification(agentId, "commissionUnlocked", {
+      commission_amount: `₹${Math.round(Number(event.agentCommissionAmount || event.amount || 0)).toLocaleString("en-IN")}`,
+    }));
+    sends.push(doc.ref.set({ commissionUnlockedNotifiedAt: FieldValue.serverTimestamp() }, { merge: true }));
+  }
+  await Promise.all(sends);
+});
+
+exports.notifyAgentWeeklyDigest = onSchedule({
+  schedule: "0 20 * * 0",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const agentsSnap = await db.collection(AGENTS_COLLECTION).where("status", "==", "active").get();
+  const since = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const sends = [];
+  for (const doc of agentsSnap.docs) {
+    const agent = { id: doc.id, ...(doc.data() || {}) };
+    const [leadsSnap, eventsSnap] = await Promise.all([
+      db.collection(AGENT_LEADS_COLLECTION).where("agentId", "==", doc.id).get(),
+      db.collection(REVENUE_EVENTS_COLLECTION).where("agentId", "==", doc.id).where("eventType", "==", "agent_commission").where("status", "==", "recorded").get(),
+    ]);
+    let signups = 0;
+    leadsSnap.forEach((leadDoc) => { if (parseTimestampMs(leadDoc.data()?.createdAt) >= since) signups++; });
+    let paid = 0;
+    let commission = 0;
+    eventsSnap.forEach((eventDoc) => {
+      const data = eventDoc.data() || {};
+      if (parseTimestampMs(data.createdAt) < since) return;
+      paid++;
+      commission += Number(data.agentCommissionAmount || data.amount || 0);
+    });
+    sends.push(sendAgentNotification(doc.id, "weeklyDigest", {
+      agent_name: agent.name || "Agent",
+      signups,
+      paid,
+      commission_amount: `₹${Math.round(commission).toLocaleString("en-IN")}`,
+    }));
+  }
+  await Promise.all(sends);
+});
+
+exports.notifyAgentFestivalReminder = onSchedule({
+  schedule: "0 9 * * *",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  await ensureAgentDashboardDefaults();
+  const todayMs = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").getTime();
+  const festivals = await listSeededCollection(FESTIVALS_COLLECTION, DEFAULT_FESTIVALS);
+  const dueFestivals = festivals.filter((festival) => {
+    if (festival.enabled === false) return false;
+    const dateMs = Date.parse(`${String(festival.date || "").slice(0, 10)}T00:00:00.000Z`);
+    if (!Number.isFinite(dateMs)) return false;
+    const reminderDays = Math.max(0, parseInt(festival.reminderDaysBefore, 10) || 7);
+    return dateMs - (reminderDays * 24 * 60 * 60 * 1000) === todayMs;
+  });
+  if (!dueFestivals.length) return;
+  const agentsSnap = await db.collection(AGENTS_COLLECTION).where("status", "==", "active").get();
+  const sends = [];
+  dueFestivals.forEach((festival) => {
+    agentsSnap.forEach((doc) => {
+      const agent = doc.data() || {};
+      sends.push(sendAgentNotification(doc.id, "festivalReminder", {
+        agent_name: agent.name || "Agent",
+        festival_name: festival.name,
+        promo_code: festival.promoCode || "",
+        messageOverride: festival.teluguMessage || festival.englishMessage || `${festival.name} outreach reminder`,
+      }));
+    });
+  });
+  await Promise.all(sends);
+});
+
+exports.notifyAgentRefundApplied = onDocumentWritten(
+  { document: `${REVENUE_EVENTS_COLLECTION}/{eventId}`, region: "us-central1" },
+  async (event) => {
+    const before = event.data?.before;
+    const after = event.data?.after;
+    if (before?.exists || !after?.exists) return;
+    const data = after.data() || {};
+    if (String(data.eventType || "") !== "commission_clawback") return;
+    const agentId = String(data.agentId || "");
+    if (!agentId) return;
+    await sendAgentNotification(agentId, "refundApplied", {
+      commission_amount: `₹${Math.abs(Math.round(Number(data.agentCommissionAmount || data.amount || 0))).toLocaleString("en-IN")}`,
+      fallbackMessage: "{{agent_name}}, refund applied. Commission {{commission_amount}} has been marked disputed.",
+    });
   }
 );

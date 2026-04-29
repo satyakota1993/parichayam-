@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="600" viewBox="0 0 1050 600" role="img" aria-label="Parichayam business card placeholder">
+  <rect width="1050" height="600" rx="24" fill="#4A0E1A"/>
+  <rect x="40" y="40" width="970" height="520" rx="18" fill="none" stroke="#C9963A" stroke-width="4"/>
+  <text x="92" y="150" font-family="Georgia, serif" font-size="70" fill="#E8C06A">Parichayam</text>
+  <text x="92" y="205" font-family="Arial, sans-serif" font-size="28" fill="#F5EAD8">Agent Referral Partner</text>
+  <text x="92" y="330" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#FFFDF9">Agent Name</text>
+  <text x="92" y="385" font-family="Arial, sans-serif" font-size="30" fill="#F5EAD8">City | WhatsApp | Referral Code</text>
+  <rect x="800" y="120" width="150" height="150" rx="12" fill="#FFFDF9"/>
+  <text x="875" y="205" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#2A0810">QR</text>
+  <text x="92" y="500" font-family="Arial, sans-serif" font-size="26" fill="#E8C06A">parichayam.co.in</text>
+</svg>

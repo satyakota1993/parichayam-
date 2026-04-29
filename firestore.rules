@@ -49,6 +49,10 @@ service cloud.firestore {
         'parichayam_connect_packs',
         'parichayam_connect_costs',
         'parichayam_agent_directory',
+        'parichayam_agent_tiers',
+        'parichayam_agent_commission_settings',
+        'parichayam_leaderboard_settings',
+        'parichayam_whatsapp_notification_settings',
         'parichayam_gotras',
         'parichayam_ads',
         'parichayam_dash_vis',
@@ -361,6 +365,26 @@ service cloud.firestore {
     match /agentPayoutRequests/{requestId} {
       allow read: if isAdmin() ||
         (signedIn() && resource.data.agentId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /whatsappTemplates/{templateId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /marketingMaterials/{materialId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /festivals/{festivalId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /notificationLog/{logId} {
+      allow read: if isAdmin();
       allow create, update, delete: if false;
     }
 
