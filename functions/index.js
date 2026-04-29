@@ -103,6 +103,7 @@ const DEFAULT_LEADERBOARD_SETTINGS = {
 };
 const DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS = {
   enabled: false,
+  dailyCap: 200,
   estimatedCostPerMessage: 0.5,
   triggers: {
     newSignup: true,
@@ -3798,6 +3799,7 @@ function normalizeWhatsappNotificationSettings(raw) {
   const triggers = source.triggers && typeof source.triggers === "object" ? source.triggers : {};
   return {
     enabled: source.enabled === true,
+    dailyCap: Math.max(1, parseInt(source.dailyCap ?? DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.dailyCap, 10) || DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.dailyCap),
     estimatedCostPerMessage: Math.max(0, Number(source.estimatedCostPerMessage ?? DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.estimatedCostPerMessage) || DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.estimatedCostPerMessage),
     triggers: {
       ...DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.triggers,
@@ -5674,6 +5676,19 @@ async function logNotification(entry) {
   });
 }
 
+async function countWhatsappSendsSince(sinceDate, cap) {
+  const query = db.collection(NOTIFICATION_LOG_COLLECTION)
+    .where("channel", "==", "whatsapp")
+    .where("status", "==", "sent")
+    .where("createdAt", ">=", sinceDate);
+  if (typeof query.count === "function") {
+    const aggregateSnap = await query.count().get();
+    return Number(aggregateSnap.data().count || 0);
+  }
+  const snap = await query.limit(Math.max(1, cap + 1)).get();
+  return snap.size;
+}
+
 async function fallbackEmailNotification(agent, trigger, message, reason) {
   const webhook = String(process.env.FALLBACK_EMAIL_WEBHOOK_URL || "").trim();
   if (!webhook) {
@@ -5718,6 +5733,30 @@ async function sendAgentNotification(agentId, trigger, tokens = {}) {
   if (!enabled) {
     await logNotification({ agentId, trigger, channel: "whatsapp", status: "disabled", phone, messagePreview: message.slice(0, 160) });
     return { ok: false, skipped: true, reason: "disabled" };
+  }
+  const cap = Number(settings.dailyCap || DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.dailyCap);
+  const since24h = new Date(Date.now() - (24 * 60 * 60 * 1000));
+  const sent24h = await countWhatsappSendsSince(since24h, cap);
+  if (sent24h >= cap) {
+    await logNotification({
+      agentId,
+      trigger,
+      channel: "whatsapp",
+      status: "capped",
+      phone,
+      messagePreview: message.slice(0, 160),
+      reason: `Daily cap of ${cap} reached (${sent24h} sent in last 24h)`,
+    });
+    await writeAdminAlert({
+      type: "agent_notification_daily_cap_reached",
+      severity: "warning",
+      title: "WhatsApp daily cap reached",
+      message: `Daily cap of ${cap} WhatsApp sends reached. Notifications paused for 24h.`,
+      relatedCollection: NOTIFICATION_LOG_COLLECTION,
+      relatedId: "",
+      source: "agent_notifications",
+    });
+    return { ok: false, skipped: true, reason: "daily_cap_reached" };
   }
   try {
     const providerResult = await sendWhatsappViaProvider(phone, message, trigger);

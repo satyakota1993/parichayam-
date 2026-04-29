@@ -323,6 +323,24 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "channel",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "notificationLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "trigger",
           "order": "ASCENDING"
         },
