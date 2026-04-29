@@ -5297,6 +5297,44 @@ exports.adminSaveAgentSettings = onRequest({ region: "us-central1" }, async (req
   }
 });
 
+exports.adminSendTestAgentNotification = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const [agentSnap, memberSnap] = await Promise.all([
+      db.collection(AGENTS_COLLECTION).doc(adminUser.uid).get(),
+      db.collection(MEMBERS_COLLECTION).doc(adminUser.uid).get(),
+    ]);
+    const agent = agentSnap.exists ? { id: agentSnap.id, ...(agentSnap.data() || {}) } : null;
+    const member = memberSnap.exists ? (memberSnap.data() || {}) : {};
+    const phone = normalizeWhatsappPhone(req.body?.phone || agent?.whatsapp || agent?.mobile || member.whatsapp || member.phone || "");
+    if (!phone) {
+      sendJson(req, res, 400, { message: "No WhatsApp number found for this admin. Add one to your agent/member profile or pass phone." });
+      return;
+    }
+    const message = String(req.body?.message || "Parichayam WhatsApp test notification. Credentials are working.").trim();
+    const providerResult = await sendWhatsappViaProvider(phone, message, "adminTest");
+    await logNotification({
+      agentId: agent?.id || adminUser.uid,
+      trigger: "adminTest",
+      channel: "whatsapp",
+      provider: String(process.env.WHATSAPP_API_PROVIDER || "interakt"),
+      status: "sent",
+      phone,
+      messagePreview: message.slice(0, 160),
+      estimatedCost: DEFAULT_WHATSAPP_NOTIFICATION_SETTINGS.estimatedCostPerMessage,
+      providerResult,
+      sentBy: adminUser.uid,
+    });
+    sendJson(req, res, 200, { ok: true, phone, provider: String(process.env.WHATSAPP_API_PROVIDER || "interakt") });
+  } catch (error) {
+    logger.error("adminSendTestAgentNotification failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to send test notification." });
+  }
+});
+
 exports.updateAgentTiers = onSchedule({
   schedule: "15 2 * * *",
   timeZone: "Asia/Kolkata",

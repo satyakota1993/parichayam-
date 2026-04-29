@@ -40,7 +40,7 @@ Branch: `codex/agent-dashboard-complete`
 ## Not Fully Verifiable In This Desktop Session
 
 - Actual phone testing at 360px and WhatsApp app handoff still needs to be done on a physical Android/iOS device.
-- WhatsApp provider delivery requires founder-supplied Interakt/Twilio credentials in `functions/.env`.
+- WhatsApp notifications are disabled by default. Provider delivery requires founder-supplied Interakt/Twilio credentials in `functions/.env` / Cloud Functions environment (`WHATSAPP_API_PROVIDER`, `WHATSAPP_API_KEY`, `WHATSAPP_SENDER_NUMBER`) and a successful admin test notification before enabling the master switch.
 - Email fallback requires `FALLBACK_EMAIL_WEBHOOK_URL` or equivalent mail webhook.
 - End-to-end payment/refund timing should be verified against Firebase emulator or staging data after deployment because Cloud Functions triggers depend on live Firestore writes.
 

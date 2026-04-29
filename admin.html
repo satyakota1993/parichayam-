@@ -1592,11 +1592,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
 
         <div class="card">
           <div class="card-title">WhatsApp Notification Toggle</div>
+          <div id="as-wa-warning" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.22);border-radius:8px;padding:.7rem .85rem;font-size:.72rem;color:var(--rd);line-height:1.6;margin-bottom:.75rem">
+            ⚠ WhatsApp notifications are currently DISABLED.<br>
+            Configure <code>WHATSAPP_API_PROVIDER</code>, <code>WHATSAPP_API_KEY</code>, and <code>WHATSAPP_SENDER_NUMBER</code> in Cloud Functions environment, then toggle this on.
+          </div>
           <div class="f-row"><div><div class="f-lbl">WhatsApp Notifications Enabled?</div></div><input id="as-wa-enabled" type="checkbox"></div>
           <div class="f-row"><div><div class="f-lbl">Daily Send Cap</div><div class="f-sub">Maximum WhatsApp sends in any rolling 24h window</div></div><input class="f-inp" id="as-wa-daily-cap" type="number" min="1" style="width:110px"></div>
           <div id="as-wa-triggers" style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin:.7rem 0"></div>
           <div style="font-size:.72rem;color:var(--mu);line-height:1.6" id="as-wa-estimate">Estimated monthly cost: —</div>
-          <button class="btn-primary" style="margin-top:.8rem" onclick="saveAgentWhatsappSettings()">Save Changes</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+            <button class="btn-sm btn-gd" onclick="sendAgentWhatsappTest()">Send test notification to me</button>
+            <button class="btn-primary" onclick="saveAgentWhatsappSettings()">Save Changes</button>
+          </div>
         </div>
       </div>
     </div>
@@ -6380,6 +6387,7 @@ function renderAgentSettingsView(){
   setVal('as-lb-top3', lb.rewards?.top3 || 0);
   setVal('as-lb-top10', lb.rewards?.top10 || 0);
   const waEnabled = document.getElementById('as-wa-enabled'); if(waEnabled) waEnabled.checked = wa.enabled === true;
+  const waWarning = document.getElementById('as-wa-warning'); if(waWarning) waWarning.style.display = wa.enabled === true ? 'none' : 'block';
   setVal('as-wa-daily-cap', wa.dailyCap || 200);
   const triggerBox = document.getElementById('as-wa-triggers');
   if(triggerBox){
@@ -6487,6 +6495,15 @@ async function saveAgentWhatsappSettings(){
   const triggers = {};
   document.querySelectorAll('.as-wa-trigger').forEach(el=>{ triggers[el.dataset.trigger] = el.checked; });
   await saveAgentSettingsPayload({ whatsappSettings:{ enabled:document.getElementById('as-wa-enabled')?.checked === true, dailyCap:Number(document.getElementById('as-wa-daily-cap')?.value||200), triggers } }, 'WhatsApp settings saved');
+}
+
+async function sendAgentWhatsappTest(){
+  try{
+    await adminCloudFetch('adminSendTestAgentNotification',{ body:{} });
+    toast('✅ Test WhatsApp notification sent. Check your phone.', 'success');
+  }catch(error){
+    toast('Test notification failed: '+(error.message||error), 'error');
+  }
 }
 
 let _paymentResilienceCache = {
