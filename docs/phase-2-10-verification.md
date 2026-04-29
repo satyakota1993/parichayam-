@@ -54,3 +54,25 @@ Branch: `codex/agent-dashboard-complete`
 - Telugu UI: static and dynamic dashboard labels implemented; founder copy review required.
 - Admin controls: UI and `adminSaveAgentSettings` implemented; needs admin save test.
 - Mobile end-to-end: responsive layout implemented; physical device test pending.
+
+## Pre-Deploy Hardening (Round 2)
+
+Date: 2026-04-29
+
+Applied 5 fixes from independent review:
+
+- [x] B1: Committed all Phase 2.10 work (commit `4a9405c`)
+- [x] H1: Tightened Firestore rules - whatsappTemplates/marketingMaterials/festivals now require agent or admin (commit `51c582a`)
+- [x] H2: Added per-day WhatsApp send cap (default 200/day, configurable) (commit `6e3edd3`)
+- [x] H3: WhatsApp notifications disabled by default until credentials configured (commit `0384bd3`)
+- [x] H4: notifyAgentCommissionUnlocked now uses indexed query with limit 500 (commit `0d1e6d9`)
+
+Validation:
+
+- node --check functions/index.js: PASS
+- JSON parse checks: PASS
+- Inline JS parse for agent.html and admin.html: PASS
+
+Status: READY FOR STAGING DEPLOY
+
+Founder must complete physical phone testing (10 scenarios in initial verification report) before production merge.
