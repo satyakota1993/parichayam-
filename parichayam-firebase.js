@@ -96,6 +96,10 @@
     "parichayam_verification_settings",
     "parichayam_kundali_pack_settings",
     "parichayam_public_profile_fields",
+    "parichayam_matchmaker_pricing",
+    "parichayam_matchmaker_settings",
+    "parichayam_matchmaker_proof",
+    "parichayam_matchmaker_prompts",
   ]);
 
   const firebaseConfig = window.PARICHAYAM_FIREBASE_CONFIG || {};
@@ -519,6 +523,94 @@
     return callAuthenticatedFunction("agentGetCommissionLedger", {});
   }
 
+  async function createMatchmakerSubscriptionOrder(payload) {
+    return callAuthenticatedFunction("createMatchmakerSubscriptionOrder", payload || {});
+  }
+
+  async function enrollMatchmakerSubscription(payload) {
+    return callAuthenticatedFunction("enrollMatchmakerSubscription", payload || {});
+  }
+
+  async function cancelMatchmakerSubscription(payload) {
+    return callAuthenticatedFunction("cancelMatchmakerSubscription", payload || {});
+  }
+
+  async function getMatchmakerEnrollmentInfo() {
+    return callAuthenticatedFunction("getMatchmakerEnrollmentInfo", {});
+  }
+
+  async function searchMembersForMatchmaker(payload) {
+    return callAuthenticatedFunction("searchMembersForMatchmaker", payload || {});
+  }
+
+  async function universalMemberSearch(payload) {
+    return callAuthenticatedFunction("universalMemberSearch", payload || {});
+  }
+
+  async function getMemberProfile360(payload) {
+    return callAuthenticatedFunction("getMemberProfile360", payload || {});
+  }
+
+  async function createMatchSuggestion(payload) {
+    return callAuthenticatedFunction("createMatchSuggestion", payload || {});
+  }
+
+  async function respondToMatchSuggestion(payload) {
+    return callAuthenticatedFunction("respondToMatchSuggestion", payload || {});
+  }
+
+  async function markSuggestionViewed(payload) {
+    return callAuthenticatedFunction("markSuggestionViewed", payload || {});
+  }
+
+  async function getMemberSuggestions(payload) {
+    return callAuthenticatedFunction("getMemberSuggestions", payload || {});
+  }
+
+  async function createFamilyIntroduction(payload) {
+    return callAuthenticatedFunction("createFamilyIntroduction", payload || {});
+  }
+
+  async function updateIntroductionOutcome(payload) {
+    return callAuthenticatedFunction("updateIntroductionOutcome", payload || {});
+  }
+
+  async function addMatchmakerNote(payload) {
+    return callAuthenticatedFunction("addMatchmakerNote", payload || {});
+  }
+
+  async function sendMatchmakerMessage(payload) {
+    return callAuthenticatedFunction("sendMatchmakerMessage", payload || {});
+  }
+
+  async function getMyConversations(payload) {
+    return callAuthenticatedFunction("getMyConversations", payload || {});
+  }
+
+  async function getMessagesForConversation(payload) {
+    return callAuthenticatedFunction("getMessagesForConversation", payload || {});
+  }
+
+  async function adminReassignMatchmaker(payload) {
+    return callAuthenticatedFunction("adminReassignMatchmaker", payload || {});
+  }
+
+  async function getMatchmakerStats(payload) {
+    return callAuthenticatedFunction("getMatchmakerStats", payload || {});
+  }
+
+  async function recordAnalyticsEvent(payload) {
+    return callAuthenticatedFunction("recordAnalyticsEvent", payload || {});
+  }
+
+  async function adminSaveMatchmakerSettings(payload) {
+    return callAuthenticatedFunction("adminSaveMatchmakerSettings", payload || {});
+  }
+
+  async function adminGetSystemPulse(payload) {
+    return callAuthenticatedFunction("adminGetSystemPulse", payload || {});
+  }
+
   async function ensureAuthReady() {
     try {
       await withTimeout(authReadyPromise, AUTH_READY_TIMEOUT_MS, "Authentication service is taking longer than expected. Please refresh and try again.", "auth/timeout");
@@ -634,6 +726,10 @@
       "parichayam_site_settings",
       "parichayam_verification_settings",
       "parichayam_dashboard_notice",
+      "parichayam_matchmaker_pricing",
+      "parichayam_matchmaker_settings",
+      "parichayam_matchmaker_proof",
+      "parichayam_matchmaker_prompts",
     ],
   };
 
@@ -1934,6 +2030,28 @@
     getAgentSettings,
     adminSaveAgentSettings,
     agentGetCommissionLedger,
+    createMatchmakerSubscriptionOrder,
+    enrollMatchmakerSubscription,
+    cancelMatchmakerSubscription,
+    getMatchmakerEnrollmentInfo,
+    searchMembersForMatchmaker,
+    universalMemberSearch,
+    getMemberProfile360,
+    createMatchSuggestion,
+    respondToMatchSuggestion,
+    markSuggestionViewed,
+    getMemberSuggestions,
+    createFamilyIntroduction,
+    updateIntroductionOutcome,
+    addMatchmakerNote,
+    sendMatchmakerMessage,
+    getMyConversations,
+    getMessagesForConversation,
+    adminReassignMatchmaker,
+    getMatchmakerStats,
+    recordAnalyticsEvent,
+    adminSaveMatchmakerSettings,
+    adminGetSystemPulse,
     signInWithCustomToken,
     completeMembership: apiCompleteMembership,
     bootstrapPage,

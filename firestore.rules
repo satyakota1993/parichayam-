@@ -33,6 +33,18 @@ service cloud.firestore {
         currentMemberRole() in ['ADMIN', 'MATCHMAKER', 'EMPLOYEE'];
     }
 
+    function isMatchmaker() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/members/$(request.auth.uid)) &&
+        currentMemberRole() in ['ADMIN', 'MATCHMAKER'];
+    }
+
+    function isAssignedMatchmaker(memberUid) {
+      return isMatchmaker() &&
+        exists(/databases/$(database)/documents/members/$(memberUid)) &&
+        get(/databases/$(database)/documents/members/$(memberUid)).data.assignedMatchmakerUid == request.auth.uid;
+    }
+
     function isAnonymousPublicStateKey(key) {
       return key in [
         'parichayam_trial_settings',
@@ -58,6 +70,10 @@ service cloud.firestore {
         'parichayam_agent_commission_settings',
         'parichayam_leaderboard_settings',
         'parichayam_whatsapp_notification_settings',
+        'parichayam_matchmaker_pricing',
+        'parichayam_matchmaker_settings',
+        'parichayam_matchmaker_proof',
+        'parichayam_matchmaker_prompts',
         'parichayam_gotras',
         'parichayam_ads',
         'parichayam_dash_vis',
@@ -173,6 +189,14 @@ service cloud.firestore {
         // Staff/admin workflow assignment & control fields (normal members must not mutate).
         'assignedMatchmakerUid',
         'assignedMatchmakerName',
+        'matchmakerActive',
+        'matchmakerEndDate',
+        'matchmakerSubscriptionId',
+        'matchmakerAssignedAt',
+        'isStickyMatchmaker',
+        'lastMatchmakerUid',
+        'matchmakerPlan',
+        'engagementStatus',
         'assignedVerificationStaffUid',
         'assignedVerificationStaffName',
         'updatedByStaffUid',
@@ -386,6 +410,81 @@ service cloud.firestore {
     match /festivals/{festivalId} {
       allow read: if isAdmin() || isAgent();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /matchSuggestions/{id} {
+      allow read: if isAdmin() || (
+        signedIn() && (
+          resource.data.forMemberAUid == request.auth.uid ||
+          resource.data.forMemberBUid == request.auth.uid ||
+          resource.data.createdBy == request.auth.uid ||
+          isMatchmaker()
+        )
+      );
+      allow create: if isMatchmaker() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow update: if isAdmin() || (
+        isMatchmaker() && resource.data.createdBy == request.auth.uid
+      ) || (
+        signedIn() &&
+        resource.data.forMemberAUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberAAction', 'memberAActionAt', 'memberAViewedAt', 'memberADeclineReason', 'status', 'mutualInterestAt', 'closedAt', 'closeReason', 'updatedAt'])
+      ) || (
+        signedIn() &&
+        resource.data.forMemberBUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberBAction', 'memberBActionAt', 'memberBViewedAt', 'memberBDeclineReason', 'status', 'mutualInterestAt', 'closedAt', 'closeReason', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /familyIntroductions/{id} {
+      allow read: if isAdmin() || isMatchmaker() ||
+        (signedIn() && (resource.data.memberAUid == request.auth.uid || resource.data.memberBUid == request.auth.uid));
+      allow create: if isMatchmaker() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAdmin() || (isMatchmaker() && resource.data.createdBy == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /matchmakerSubscriptions/{id} {
+      allow read: if isAdmin() || isMatchmaker() ||
+        (signedIn() && resource.data.memberUid == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /matchmakerNotes/{id} {
+      allow read: if isAdmin() ||
+        (isMatchmaker() && resource.data.authorUid == request.auth.uid);
+      allow create: if isMatchmaker() && request.resource.data.authorUid == request.auth.uid;
+      allow update: if isAdmin() || (isMatchmaker() && resource.data.authorUid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /matchmakerMessages/{id} {
+      allow read: if isAdmin() ||
+        (signedIn() && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid));
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update: if isAdmin() || (
+        signedIn() && resource.data.toUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /activityLog/{id} {
+      allow read: if isAdmin() || (
+        signedIn() && resource.data.memberUid == request.auth.uid && resource.data.visibility.member == true
+      ) || (
+        isAssignedMatchmaker(resource.data.memberUid) && resource.data.visibility.matchmaker == true
+      );
+      allow create, update, delete: if false;
+    }
+
+    match /analyticsEvents/{id} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /notificationLog/{logId} {

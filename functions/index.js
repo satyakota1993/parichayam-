@@ -79,6 +79,118 @@ const WHATSAPP_TEMPLATES_COLLECTION = "whatsappTemplates";
 const FESTIVALS_COLLECTION = "festivals";
 const MARKETING_MATERIALS_COLLECTION = "marketingMaterials";
 const NOTIFICATION_LOG_COLLECTION = "notificationLog";
+
+// ──────────────────────────────────────────────────────────
+// PHASE 3-LEAN: MATCHMAKER OPERATING SYSTEM
+// ──────────────────────────────────────────────────────────
+const MATCH_SUGGESTIONS_COLLECTION = "matchSuggestions";
+const FAMILY_INTRODUCTIONS_COLLECTION = "familyIntroductions";
+const MATCHMAKER_SUBSCRIPTIONS_COLLECTION = "matchmakerSubscriptions";
+const MATCHMAKER_NOTES_COLLECTION = "matchmakerNotes";
+const MATCHMAKER_MESSAGES_COLLECTION = "matchmakerMessages";
+const ACTIVITY_LOG_COLLECTION = "activityLog";
+const ANALYTICS_EVENTS_COLLECTION = "analyticsEvents";
+
+const MATCHMAKER_PRICING_KEY = "parichayam_matchmaker_pricing";
+const MATCHMAKER_SETTINGS_KEY = "parichayam_matchmaker_settings";
+const MATCHMAKER_PROOF_KEY = "parichayam_matchmaker_proof";
+const MATCHMAKER_PROMPTS_KEY = "parichayam_matchmaker_prompts";
+
+const SUGGESTION_STATUS_FLOW = {
+  PENDING: "pending",
+  A_VIEWED: "a_viewed",
+  B_VIEWED: "b_viewed",
+  BOTH_VIEWED: "both_viewed",
+  A_LIKED: "a_liked",
+  B_LIKED: "b_liked",
+  MUTUAL_INTEREST: "mutual_interest",
+  A_DECLINED: "a_declined",
+  B_DECLINED: "b_declined",
+  FAMILY_INTRODUCED: "family_introduced",
+  IN_DISCUSSION: "in_discussion",
+  ENGAGED: "engaged",
+  CLOSED: "closed",
+};
+
+const ACTIVITY_EVENT_TYPES = {
+  MEMBER_LOGIN: "member_login",
+  MEMBER_PROFILE_UPDATED: "member_profile_updated",
+  MEMBER_PHOTO_UPLOADED: "member_photo_uploaded",
+  MEMBER_PLAN_PURCHASED: "member_plan_purchased",
+  MEMBER_MATCHMAKER_SUBSCRIBED: "member_matchmaker_subscribed",
+  MEMBER_MATCHMAKER_CANCELLED: "member_matchmaker_cancelled",
+  SUGGESTION_CREATED: "suggestion_created",
+  SUGGESTION_VIEWED: "suggestion_viewed",
+  SUGGESTION_LIKED: "suggestion_liked",
+  SUGGESTION_DECLINED: "suggestion_declined",
+  MUTUAL_INTEREST_REACHED: "mutual_interest_reached",
+  FAMILY_INTRODUCTION_CREATED: "family_introduction_created",
+  FAMILY_INTRODUCTION_OUTCOME_RECORDED: "family_introduction_outcome_recorded",
+  MATCHMAKER_ASSIGNED: "matchmaker_assigned",
+  MATCHMAKER_REASSIGNED: "matchmaker_reassigned",
+  MATCHMAKER_NOTE_ADDED: "matchmaker_note_added",
+  MATCHMAKER_MESSAGE_SENT: "matchmaker_message_sent",
+  MATCHMAKER_CALL_LOGGED: "matchmaker_call_logged",
+  ADMIN_INTERVENTION: "admin_intervention",
+  ADMIN_REFUND_ISSUED: "admin_refund_issued",
+  ADMIN_NOTE_ADDED: "admin_note_added",
+  SYSTEM_SUGGESTION_EXPIRED: "system_suggestion_expired",
+  SYSTEM_SUBSCRIPTION_EXPIRED: "system_subscription_expired",
+  SYSTEM_RENEWAL_REMINDER: "system_renewal_reminder",
+};
+
+const DEFAULT_MATCHMAKER_PRICING = {
+  monthly: { price: 2000, durationDays: 30, suggestionsPerWeek: 3, enabled: true, label: "" },
+  quarterly: { price: 5000, durationDays: 90, suggestionsPerWeek: 3, enabled: true, label: "MOST POPULAR" },
+  six_months: { price: 10000, durationDays: 180, suggestionsPerWeek: 3, enabled: true, label: "BEST VALUE" },
+};
+
+const DEFAULT_MATCHMAKER_SETTINGS = {
+  suggestionExpiryDays: 14,
+  autoCloseExpired: true,
+  warnSameGotra: true,
+  warnAgeDifferenceAbove: 7,
+  warnInterStateMatch: false,
+  warnManglikMismatch: true,
+  revealFullNameOnMutualInterest: true,
+  revealPhoneOnFamilyIntroduction: true,
+  revealPhoneOnMutualInterest: false,
+  minimumNoteLength: 30,
+  maximumNoteLength: 500,
+  allowMatchmakerMessaging: true,
+  stickyMatchmakerOnRenewal: true,
+  enableConflictOfInterestCheck: true,
+};
+
+const DEFAULT_MATCHMAKER_PROOF = {
+  totalCouplesMatched: 47,
+  avgEngagementDays: 67,
+  successRatePercent: 92,
+  testimonials: [
+    { name: "S. Lakshmi", city: "Vijayawada", quote: "Our matchmaker guided both families with warmth and clarity.", engagedAt: "2026-01-12" },
+    { name: "P. Karthik", city: "Hyderabad", quote: "The shortlist quality was much better than searching alone.", engagedAt: "2025-12-08" },
+  ],
+  matchmakerProfile: {
+    name: "Parichayam Match Desk",
+    experience: "22 years",
+    languages: ["Telugu", "English", "Hindi"],
+    city: "Vijayawada",
+    photoUrl: "",
+  },
+};
+
+const DEFAULT_MATCHMAKER_PROMPTS = [
+  { id: "trial_interest", enabled: true, trigger: "member_shortlisted_without_matchmaker", title: "Want curated matches?", body: "A dedicated matchmaker can handpick families and manage the first introduction.", cta: "See plans" },
+  { id: "recent_declines", enabled: true, trigger: "member_declined_three_profiles", title: "Need help refining the search?", body: "Your matchmaker can screen profiles based on family fit before you see them.", cta: "Get a matchmaker" },
+  { id: "inactive_search", enabled: true, trigger: "member_inactive_search_7d", title: "Search feeling slow?", body: "A matchmaker can keep momentum with curated suggestions each week.", cta: "View plans" },
+  { id: "verification_upgrade", enabled: true, trigger: "member_verified_profile", title: "Use your verified profile fully", body: "Unlock guided introductions with a dedicated Parichayam matchmaker.", cta: "Subscribe" },
+  { id: "event_followup", enabled: true, trigger: "member_event_interest", title: "Continue after the event", body: "Stay with the same matchmaker after Parichaya Vedhika and keep the shortlist moving.", cta: "Continue with matchmaker" },
+];
+
+const MATCHMAKER_NOTE_CATEGORIES = ["general", "preference", "family", "conflict", "follow_up"];
+const MATCHMAKER_MESSAGE_ATTACHMENT_TYPES = ["", "image", "document"];
+const MATCHMAKER_SUBSCRIPTION_PLANS = ["monthly", "quarterly", "six_months"];
+const MATCHMAKER_SUBSCRIPTION_STATUSES = ["active", "expired", "paused", "cancelled"];
 const DEFAULT_AGENT_COMMISSION_SETTINGS = {
   defaultCommissionRate: 15,
   lockPeriodDays: 30,
@@ -4408,11 +4520,10 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
 
     const originalSnap = await db.collection(REVENUE_EVENTS_COLLECTION)
       .where("orderId", "==", orderId)
-      .where("eventType", "==", "membership_paid")
-      .limit(1)
+      .limit(5)
       .get();
-    if (originalSnap.empty) { sendJson(req, res, 404, { message: "Original membership revenue event not found." }); return; }
-    const originalDoc = originalSnap.docs[0];
+    const originalDoc = originalSnap.docs.find((doc) => ["membership_paid", "matchmaker_subscription_paid"].includes(String(doc.data()?.eventType || "")));
+    if (!originalDoc) { sendJson(req, res, 404, { message: "Original revenue event not found." }); return; }
     const originalEvent = originalDoc.data() || {};
     if (memberId && String(originalEvent.memberId || "") !== memberId) {
       sendJson(req, res, 400, { message: "Order does not belong to the provided member." });
@@ -4517,7 +4628,7 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
     await db.runTransaction(async (transaction) => {
       const freshOriginal = await transaction.get(originalDoc.ref);
       if (!freshOriginal.exists) {
-        const err = new Error("Original membership revenue event not found.");
+        const err = new Error("Original revenue event not found.");
         err.status = 404;
         throw err;
       }
@@ -4576,6 +4687,37 @@ exports.processRefund = onRequest({ region: "us-central1" }, async (req, res) =>
         if (commissionDoc) transaction.update(commissionDoc.ref, { status: "disputed" });
       }
     });
+
+    if (String(originalEvent.eventType || "") === "matchmaker_subscription_paid") {
+      const subscriptionId = String(originalEvent.metadata?.matchmakerSubscriptionId || "").trim();
+      const memberUid = String(originalEvent.memberId || "").trim();
+      if (subscriptionId) {
+        await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscriptionId).set({
+          status: "cancelled",
+          cancelledAt: FieldValue.serverTimestamp(),
+          cancelReason: `Refunded by admin: ${reason}`,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true }).catch(() => null);
+      }
+      if (memberUid) {
+        await db.collection(MEMBERS_COLLECTION).doc(memberUid).set({
+          matchmakerActive: false,
+          matchmakerSubscriptionId: "",
+          matchmakerPlan: "",
+          assignedMatchmakerUid: "",
+          assignedMatchmakerName: "",
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true }).catch(() => null);
+        await logActivity({
+          memberUid,
+          actor: { type: "admin", uid: adminUser.uid, name: "Admin" },
+          eventType: ACTIVITY_EVENT_TYPES.ADMIN_REFUND_ISSUED,
+          details: { orderId, refundEventId, subscriptionId, reason },
+          relatedDocs: [{ collection: REVENUE_EVENTS_COLLECTION, id: refundEventId }],
+          visibility: { member: true, matchmaker: true, admin: true },
+        }).catch(() => null);
+      }
+    }
 
     sendJson(req, res, 200, {
       ok: true,
@@ -6095,3 +6237,1937 @@ exports.notifyAgentRefundApplied = onDocumentWritten(
     });
   }
 );
+
+// ──────────────────────────────────────────────────────────
+// PHASE 3-LEAN: MATCHMAKER OPERATING SYSTEM
+// ──────────────────────────────────────────────────────────
+
+function matchmakerError(status, message, code) {
+  const error = new Error(message || "Matchmaker request failed.");
+  error.status = status || 500;
+  if (code) error.code = code;
+  return error;
+}
+
+function normalizeMemberRole(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function isAdminMemberRole(value) {
+  return normalizeMemberRole(value) === "ADMIN";
+}
+
+function isMatchmakerMemberRole(value) {
+  return normalizeMemberRole(value) === "MATCHMAKER";
+}
+
+function normalizeIsoDate(value) {
+  const ms = parseTimestampMs(value);
+  return ms ? new Date(ms).toISOString() : "";
+}
+
+function computeAgeFromValue(value) {
+  const ms = parseTimestampMs(value) || Date.parse(String(value || ""));
+  if (!ms) return null;
+  const dob = new Date(ms);
+  if (Number.isNaN(dob.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+function clampMatchScore(value) {
+  return Math.max(1, Math.min(100, Math.round(Number(value || 0) || 0)));
+}
+
+function sanitizePromptList(value) {
+  const items = Array.isArray(value) ? value : [];
+  const byId = new Map();
+  items.forEach((item, index) => {
+    const id = String(item?.id || `prompt_${index + 1}`).trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
+    byId.set(id, {
+      id,
+      enabled: item?.enabled !== false,
+      trigger: String(item?.trigger || "").trim().slice(0, 80),
+      title: String(item?.title || "").trim().slice(0, 140),
+      body: String(item?.body || "").trim().slice(0, 500),
+      cta: String(item?.cta || "").trim().slice(0, 80),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+  return Array.from(byId.values());
+}
+
+function normalizeMatchmakerPricing(value) {
+  const raw = value || {};
+  const normalized = {};
+  MATCHMAKER_SUBSCRIPTION_PLANS.forEach((planKey) => {
+    const source = raw[planKey] || DEFAULT_MATCHMAKER_PRICING[planKey] || {};
+    normalized[planKey] = {
+      price: Math.max(0, Math.round(Number(source.price ?? DEFAULT_MATCHMAKER_PRICING[planKey].price) || DEFAULT_MATCHMAKER_PRICING[planKey].price)),
+      durationDays: Math.max(1, Math.round(Number(source.durationDays ?? DEFAULT_MATCHMAKER_PRICING[planKey].durationDays) || DEFAULT_MATCHMAKER_PRICING[planKey].durationDays)),
+      suggestionsPerWeek: Math.max(1, Math.round(Number(source.suggestionsPerWeek ?? DEFAULT_MATCHMAKER_PRICING[planKey].suggestionsPerWeek) || DEFAULT_MATCHMAKER_PRICING[planKey].suggestionsPerWeek)),
+      enabled: source.enabled !== false,
+      label: String((source.label ?? DEFAULT_MATCHMAKER_PRICING[planKey].label) || "").trim().slice(0, 40),
+    };
+  });
+  return normalized;
+}
+
+function normalizeMatchmakerSettings(value) {
+  const raw = value || {};
+  return {
+    suggestionExpiryDays: Math.max(1, Math.min(60, Math.round(Number(raw.suggestionExpiryDays ?? DEFAULT_MATCHMAKER_SETTINGS.suggestionExpiryDays) || DEFAULT_MATCHMAKER_SETTINGS.suggestionExpiryDays))),
+    autoCloseExpired: raw.autoCloseExpired !== false,
+    warnSameGotra: raw.warnSameGotra !== false,
+    warnAgeDifferenceAbove: Math.max(0, Math.min(25, Math.round(Number(raw.warnAgeDifferenceAbove ?? DEFAULT_MATCHMAKER_SETTINGS.warnAgeDifferenceAbove) || DEFAULT_MATCHMAKER_SETTINGS.warnAgeDifferenceAbove))),
+    warnInterStateMatch: raw.warnInterStateMatch === true,
+    warnManglikMismatch: raw.warnManglikMismatch !== false,
+    revealFullNameOnMutualInterest: raw.revealFullNameOnMutualInterest !== false,
+    revealPhoneOnFamilyIntroduction: raw.revealPhoneOnFamilyIntroduction !== false,
+    revealPhoneOnMutualInterest: raw.revealPhoneOnMutualInterest === true,
+    minimumNoteLength: Math.max(10, Math.min(300, Math.round(Number(raw.minimumNoteLength ?? DEFAULT_MATCHMAKER_SETTINGS.minimumNoteLength) || DEFAULT_MATCHMAKER_SETTINGS.minimumNoteLength))),
+    maximumNoteLength: Math.max(100, Math.min(4000, Math.round(Number(raw.maximumNoteLength ?? DEFAULT_MATCHMAKER_SETTINGS.maximumNoteLength) || DEFAULT_MATCHMAKER_SETTINGS.maximumNoteLength))),
+    allowMatchmakerMessaging: raw.allowMatchmakerMessaging !== false,
+    stickyMatchmakerOnRenewal: raw.stickyMatchmakerOnRenewal !== false,
+    enableConflictOfInterestCheck: raw.enableConflictOfInterestCheck !== false,
+  };
+}
+
+function normalizeMatchmakerProof(value) {
+  const raw = value || {};
+  return {
+    totalCouplesMatched: Math.max(0, Math.round(Number(raw.totalCouplesMatched ?? DEFAULT_MATCHMAKER_PROOF.totalCouplesMatched) || DEFAULT_MATCHMAKER_PROOF.totalCouplesMatched)),
+    avgEngagementDays: Math.max(0, Math.round(Number(raw.avgEngagementDays ?? DEFAULT_MATCHMAKER_PROOF.avgEngagementDays) || DEFAULT_MATCHMAKER_PROOF.avgEngagementDays)),
+    successRatePercent: Math.max(0, Math.min(100, Math.round(Number(raw.successRatePercent ?? DEFAULT_MATCHMAKER_PROOF.successRatePercent) || DEFAULT_MATCHMAKER_PROOF.successRatePercent))),
+    testimonials: (Array.isArray(raw.testimonials) ? raw.testimonials : DEFAULT_MATCHMAKER_PROOF.testimonials).slice(0, 12).map((item) => ({
+      name: String(item?.name || "").trim().slice(0, 120),
+      city: String(item?.city || "").trim().slice(0, 120),
+      quote: String(item?.quote || "").trim().slice(0, 500),
+      engagedAt: String(item?.engagedAt || "").trim().slice(0, 30),
+    })),
+    matchmakerProfile: {
+      name: String(raw.matchmakerProfile?.name || DEFAULT_MATCHMAKER_PROOF.matchmakerProfile.name || "").trim().slice(0, 120),
+      experience: String(raw.matchmakerProfile?.experience || DEFAULT_MATCHMAKER_PROOF.matchmakerProfile.experience || "").trim().slice(0, 120),
+      languages: Array.isArray(raw.matchmakerProfile?.languages) ? raw.matchmakerProfile.languages.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 8) : DEFAULT_MATCHMAKER_PROOF.matchmakerProfile.languages.slice(),
+      city: String(raw.matchmakerProfile?.city || DEFAULT_MATCHMAKER_PROOF.matchmakerProfile.city || "").trim().slice(0, 120),
+      photoUrl: String(raw.matchmakerProfile?.photoUrl || DEFAULT_MATCHMAKER_PROOF.matchmakerProfile.photoUrl || "").trim().slice(0, 500),
+    },
+  };
+}
+
+async function readStateDocValue(key, fallbackValue, normalizer) {
+  const doc = await db.collection(APP_STATE_COLLECTION).doc(key).get();
+  const source = doc.exists ? (doc.data()?.value ?? doc.data()) : fallbackValue;
+  return typeof normalizer === "function" ? normalizer(source) : (source || fallbackValue);
+}
+
+async function readMatchmakerPricing() {
+  return readStateDocValue(MATCHMAKER_PRICING_KEY, DEFAULT_MATCHMAKER_PRICING, normalizeMatchmakerPricing);
+}
+
+async function readMatchmakerSettings() {
+  return readStateDocValue(MATCHMAKER_SETTINGS_KEY, DEFAULT_MATCHMAKER_SETTINGS, normalizeMatchmakerSettings);
+}
+
+async function readMatchmakerProof() {
+  return readStateDocValue(MATCHMAKER_PROOF_KEY, DEFAULT_MATCHMAKER_PROOF, normalizeMatchmakerProof);
+}
+
+async function readMatchmakerPrompts() {
+  return readStateDocValue(MATCHMAKER_PROMPTS_KEY, DEFAULT_MATCHMAKER_PROMPTS, sanitizePromptList);
+}
+
+async function ensureMatchmakerDefaults() {
+  const refs = [
+    { key: MATCHMAKER_PRICING_KEY, value: normalizeMatchmakerPricing(DEFAULT_MATCHMAKER_PRICING) },
+    { key: MATCHMAKER_SETTINGS_KEY, value: normalizeMatchmakerSettings(DEFAULT_MATCHMAKER_SETTINGS) },
+    { key: MATCHMAKER_PROOF_KEY, value: normalizeMatchmakerProof(DEFAULT_MATCHMAKER_PROOF) },
+    { key: MATCHMAKER_PROMPTS_KEY, value: sanitizePromptList(DEFAULT_MATCHMAKER_PROMPTS) },
+  ];
+  const snaps = await Promise.all(refs.map((item) => db.collection(APP_STATE_COLLECTION).doc(item.key).get()));
+  const batch = db.batch();
+  let hasWrites = false;
+  refs.forEach((item, index) => {
+    if (snaps[index].exists) return;
+    batch.set(db.collection(APP_STATE_COLLECTION).doc(item.key), {
+      value: item.value,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: "system_seed",
+    }, { merge: true });
+    hasWrites = true;
+  });
+  if (hasWrites) await batch.commit();
+}
+
+async function verifyMatchmakerUser(req) {
+  const authUser = await verifyAuthenticatedUser(req);
+  const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get();
+  if (!memberSnap.exists) throw matchmakerError(404, "Matchmaker profile not found.");
+  const member = { id: memberSnap.id, ...(memberSnap.data() || {}) };
+  const role = normalizeMemberRole(member.role);
+  if (!["ADMIN", "MATCHMAKER"].includes(role)) throw matchmakerError(403, "Matchmaker or admin access required.");
+  return { ...authUser, member };
+}
+
+async function verifyAssignedMatchmaker(req, memberUid) {
+  const user = await verifyMatchmakerUser(req);
+  if (isAdminMemberRole(user.member?.role)) return user;
+  const targetSnap = await db.collection(MEMBERS_COLLECTION).doc(String(memberUid || "").trim()).get();
+  if (!targetSnap.exists) throw matchmakerError(404, "Member not found.");
+  if (String(targetSnap.data()?.assignedMatchmakerUid || "").trim() !== String(user.uid || "").trim()) {
+    throw matchmakerError(403, "This member is assigned to another matchmaker.");
+  }
+  return user;
+}
+
+async function getMemberPhotoUrlForViewer(viewerUid, targetMember) {
+  const target = targetMember || {};
+  const viewerSnap = await db.collection(MEMBERS_COLLECTION).doc(String(viewerUid || "").trim()).get();
+  if (!viewerSnap.exists) return null;
+  const viewerData = viewerSnap.data() || {};
+  const viewerRole = normalizeMemberRole(viewerData.role);
+  if (viewerRole === "ADMIN" || viewerRole === "MATCHMAKER") return String(target.profilePhotoUrl || target.photoUrl || "").trim() || null;
+  if (String(viewerUid || "") === String(target.uid || target.id || "")) return String(target.profilePhotoUrl || target.photoUrl || "").trim() || null;
+  return String(target.profilePhotoUrlBlurred || "").trim() || (target.profilePhotoUrl ? `${target.profilePhotoUrl}?blur=true` : null);
+}
+
+function computeDefaultVisibility(eventType) {
+  const memberVisible = [
+    ACTIVITY_EVENT_TYPES.SUGGESTION_CREATED,
+    ACTIVITY_EVENT_TYPES.SUGGESTION_LIKED,
+    ACTIVITY_EVENT_TYPES.SUGGESTION_DECLINED,
+    ACTIVITY_EVENT_TYPES.MUTUAL_INTEREST_REACHED,
+    ACTIVITY_EVENT_TYPES.MATCHMAKER_ASSIGNED,
+    ACTIVITY_EVENT_TYPES.MATCHMAKER_REASSIGNED,
+    ACTIVITY_EVENT_TYPES.MATCHMAKER_MESSAGE_SENT,
+    ACTIVITY_EVENT_TYPES.FAMILY_INTRODUCTION_CREATED,
+    ACTIVITY_EVENT_TYPES.MEMBER_PLAN_PURCHASED,
+    ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_SUBSCRIBED,
+    ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_CANCELLED,
+  ];
+  const adminOnly = [
+    ACTIVITY_EVENT_TYPES.ADMIN_INTERVENTION,
+    ACTIVITY_EVENT_TYPES.ADMIN_NOTE_ADDED,
+    ACTIVITY_EVENT_TYPES.ADMIN_REFUND_ISSUED,
+  ];
+  return {
+    member: memberVisible.includes(eventType),
+    matchmaker: !adminOnly.includes(eventType),
+    admin: true,
+  };
+}
+
+async function logActivity({ memberUid, actor, eventType, details = {}, relatedDocs = [], visibility }) {
+  const eventId = `evt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  await db.collection(ACTIVITY_LOG_COLLECTION).doc(eventId).set({
+    eventId,
+    memberUid: String(memberUid || "").trim(),
+    actor: {
+      type: String(actor?.type || "system").trim(),
+      uid: String(actor?.uid || "system").trim(),
+      name: String(actor?.name || "Parichayam").trim(),
+    },
+    eventType: String(eventType || "").trim(),
+    visibility: visibility || computeDefaultVisibility(eventType),
+    details: details || {},
+    relatedDocs: Array.isArray(relatedDocs) ? relatedDocs : [],
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return eventId;
+}
+
+async function countMatchmakerLoad(uid) {
+  const query = db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
+    .where("assignedMatchmakerUid", "==", String(uid || "").trim())
+    .where("status", "==", "active");
+  if (typeof query.count === "function") {
+    const aggregate = await query.count().get();
+    return Number(aggregate.data().count || 0);
+  }
+  const snap = await query.limit(1000).get();
+  return snap.size;
+}
+
+async function assignMatchmakerToMember(memberUid, options = {}) {
+  const cleanMemberUid = String(memberUid || "").trim();
+  if (!cleanMemberUid) throw matchmakerError(400, "Member UID is required.");
+  const settings = await readMatchmakerSettings();
+  if (settings.stickyMatchmakerOnRenewal && !options.forceNew) {
+    const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(cleanMemberUid).get();
+    if (memberSnap.exists) {
+      const data = memberSnap.data() || {};
+      const previousMatchmakerUid = String(data.assignedMatchmakerUid || data.lastMatchmakerUid || "").trim();
+      if (previousMatchmakerUid) {
+        const prevSnap = await db.collection(MEMBERS_COLLECTION).doc(previousMatchmakerUid).get();
+        if (prevSnap.exists) {
+          const prev = prevSnap.data() || {};
+          if (isMatchmakerMemberRole(prev.role) && ["ACTIVE", "active", ""].includes(String(prev.status || "").trim())) {
+            return { matchmakerUid: previousMatchmakerUid, matchmakerName: prev.name || "Matchmaker", isSticky: true };
+          }
+        }
+      }
+    }
+  }
+
+  const matchmakersSnap = await db.collection(MEMBERS_COLLECTION)
+    .where("role", "==", "MATCHMAKER")
+    .get();
+  const activeDocs = matchmakersSnap.docs.filter((doc) => {
+    const data = doc.data() || {};
+    const status = String(data.status || data.accountStatus || "ACTIVE").trim().toUpperCase();
+    return status !== "SUSPENDED" && status !== "BLOCKED" && status !== "DEACTIVATED";
+  });
+  if (!activeDocs.length) {
+    await writeAdminAlert({
+      type: "matchmaker_assignment_unavailable",
+      severity: "warning",
+      title: "No matchmakers available",
+      message: "A member attempted to start a matchmaker subscription, but no active matchmakers were available.",
+      memberId: cleanMemberUid,
+      relatedCollection: MEMBERS_COLLECTION,
+      relatedId: cleanMemberUid,
+      source: "matchmaker_subscription",
+    });
+    throw matchmakerError(503, "No matchmakers available. Please contact admin.");
+  }
+  const loads = await Promise.all(activeDocs.map(async (doc) => ({
+    uid: doc.id,
+    name: String(doc.data()?.name || "Matchmaker").trim(),
+    load: await countMatchmakerLoad(doc.id),
+  })));
+  loads.sort((left, right) => {
+    if (left.load !== right.load) return left.load - right.load;
+    return String(left.name || "").localeCompare(String(right.name || ""));
+  });
+  return { matchmakerUid: loads[0].uid, matchmakerName: loads[0].name, isSticky: false };
+}
+
+function computeCompatibilityFactors(memberA, memberB, settings) {
+  const ageA = computeAgeFromValue(memberA.dateOfBirth || memberA.dob);
+  const ageB = computeAgeFromValue(memberB.dateOfBirth || memberB.dob);
+  const ageDiff = ageA !== null && ageB !== null ? Math.abs(ageA - ageB) : null;
+  const sameGotra = String(memberA.gotra || "").trim() && String(memberA.gotra || "").trim().toLowerCase() === String(memberB.gotra || "").trim().toLowerCase();
+  const sameState = String(memberA.state || "").trim().toLowerCase() && String(memberA.state || "").trim().toLowerCase() === String(memberB.state || "").trim().toLowerCase();
+  return {
+    gotra: sameGotra ? "same" : "compatible",
+    age: ageDiff === null ? "unknown" : (ageDiff <= (settings.warnAgeDifferenceAbove || 7) ? "within_range" : "wide_gap"),
+    height: String(memberA.height || "") && String(memberB.height || "") ? "provided" : "unknown",
+    education: String(memberA.educationLevel || memberA.education || "").trim() && String(memberB.educationLevel || memberB.education || "").trim() ? "provided" : "unknown",
+    location: sameState ? "same_state" : "cross_state",
+    manglik: String(memberA.manglik || "").trim().toLowerCase() === String(memberB.manglik || "").trim().toLowerCase() ? "aligned" : "check",
+    diet: String(memberA.diet || "").trim().toLowerCase() === String(memberB.diet || "").trim().toLowerCase() ? "aligned" : "check",
+  };
+}
+
+function computeCompatibilityScore(memberA, memberB, settings) {
+  const factors = computeCompatibilityFactors(memberA, memberB, settings);
+  let score = 60;
+  if (factors.gotra === "compatible") score += 8;
+  if (factors.age === "within_range") score += 10;
+  if (factors.location === "same_state") score += 6;
+  if (factors.manglik === "aligned") score += 6;
+  if (factors.diet === "aligned") score += 4;
+  if (String(memberA.educationLevel || memberA.education || "").trim() && String(memberB.educationLevel || memberB.education || "").trim()) score += 3;
+  if (settings.warnSameGotra && factors.gotra === "same") score -= 14;
+  if (settings.warnManglikMismatch && factors.manglik === "check") score -= 8;
+  return { score: Math.max(1, Math.min(100, Math.round(score))), factors };
+}
+
+async function ensureMemberNameLower(memberUid, data) {
+  const cleanUid = String(memberUid || "").trim();
+  const nameLower = String(data?.nameLower || "").trim();
+  const fallback = String(data?.name || data?.fullName || "").trim().toLowerCase();
+  if (!cleanUid || nameLower || !fallback) return fallback || nameLower;
+  await db.collection(MEMBERS_COLLECTION).doc(cleanUid).set({ nameLower: fallback, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return fallback;
+}
+
+function buildMatchmakerConversationId(matchmakerUid, memberUid) {
+  return `${String(matchmakerUid || "").trim()}_${String(memberUid || "").trim()}`;
+}
+
+async function buildMatchmakerRevenueEvents(params) {
+  const memberId = String(params.memberId || "").trim();
+  const memberData = params.memberData || {};
+  const orderData = params.orderData || {};
+  const orderId = String(params.orderId || orderData.razorpayOrderId || "").trim();
+  const paymentId = String(params.paymentId || "").trim();
+  const agentInfo = params.agentInfo || { id: "", referralCode: "", data: {} };
+  const chargeAmount = Math.max(0, Math.round(Number(orderData.amountInr || params.amountInr || 0)));
+  const paidAtMs = Date.now();
+  const lockExpiresMs = paidAtMs + REVENUE_LOCK_MS;
+  const lockExpiresAt = revenueTimestampFromMs(lockExpiresMs);
+  const agentId = String(agentInfo.id || "").trim();
+  const agentCommissionRate = agentId ? getAgentCommissionRateForRevenue(agentInfo.data || {}) : 0;
+  const agentCommissionAmount = agentId ? roundMoney(chargeAmount * agentCommissionRate) : 0;
+  const metadata = {
+    memberTier: String(memberData.tier || memberData.plan || "paid").trim(),
+    planDurationDays: Math.max(1, Math.round(Number(orderData.durationDays || 30) || 30)),
+    basePrice: chargeAmount,
+    discountApplied: Math.max(0, Math.round(Number(orderData.discountApplied || 0) || 0)),
+    paymentGateway: "razorpay",
+    notes: String(params.notes || `Matchmaker subscription activated for ${memberData.name || memberId}`),
+    memberPaymentAmount: chargeAmount,
+    agentTierName: String(agentInfo.data?.currentTier || agentInfo.data?.commissionTier || ""),
+    purchaseType: "matchmaker_subscription",
+    plan: String(orderData.plan || "").trim(),
+    suggestionsPerWeek: Math.max(1, Math.round(Number(orderData.suggestionsPerWeek || 3) || 3)),
+    matchmakerUid: String(params.matchmakerUid || "").trim(),
+    matchmakerSubscriptionId: String(params.subscriptionId || "").trim(),
+    ...(params.ipAddress ? { ipAddress: String(params.ipAddress) } : {}),
+    ...(agentInfo.referralCode ? { agentReferralCode: String(agentInfo.referralCode) } : {}),
+  };
+  const paymentEventId = safeRevenueEventId("matchmaker_subscription_paid", paymentId || orderId || memberId);
+  const paymentEvent = {
+    eventType: "matchmaker_subscription_paid",
+    memberId,
+    amount: chargeAmount,
+    currency: "INR",
+    orderId,
+    paymentId,
+    agentId,
+    agentCommissionRate,
+    agentCommissionAmount,
+    refundReason: "",
+    relatedEventId: "",
+    lockExpiresAt,
+    isLocked: lockExpiresMs > Date.now(),
+    createdAt: FieldValue.serverTimestamp(),
+    createdBy: String(params.createdBy || "system"),
+    metadata,
+    status: "recorded",
+    version: REVENUE_SCHEMA_VERSION,
+  };
+  const commissionEventId = agentCommissionAmount > 0 ? safeRevenueEventId("agent_commission", `matchmaker_${paymentId || orderId || memberId}`) : "";
+  const commissionEvent = commissionEventId ? {
+    ...paymentEvent,
+    eventType: "agent_commission",
+    amount: agentCommissionAmount,
+    relatedEventId: paymentEventId,
+    commissionUnlockNotifyAt: lockExpiresAt,
+    commissionUnlockedNotifiedAt: null,
+  } : null;
+  return { paymentEventId, paymentEvent, commissionEventId, commissionEvent };
+}
+
+function isClosedSuggestionStatus(status) {
+  return [SUGGESTION_STATUS_FLOW.CLOSED, SUGGESTION_STATUS_FLOW.ENGAGED].includes(String(status || "").trim().toLowerCase());
+}
+
+function resolveSuggestionStatusFromActions(suggestion) {
+  const aAction = String(suggestion.memberAAction || "").trim().toLowerCase();
+  const bAction = String(suggestion.memberBAction || "").trim().toLowerCase();
+  if (aAction === "liked" && bAction === "liked") return SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST;
+  if (aAction === "declined") return SUGGESTION_STATUS_FLOW.A_DECLINED;
+  if (bAction === "declined") return SUGGESTION_STATUS_FLOW.B_DECLINED;
+  if (aAction === "liked") return SUGGESTION_STATUS_FLOW.A_LIKED;
+  if (bAction === "liked") return SUGGESTION_STATUS_FLOW.B_LIKED;
+  const aViewed = !!parseTimestampMs(suggestion.memberAViewedAt);
+  const bViewed = !!parseTimestampMs(suggestion.memberBViewedAt);
+  if (aViewed && bViewed) return SUGGESTION_STATUS_FLOW.BOTH_VIEWED;
+  if (aViewed) return SUGGESTION_STATUS_FLOW.A_VIEWED;
+  if (bViewed) return SUGGESTION_STATUS_FLOW.B_VIEWED;
+  return SUGGESTION_STATUS_FLOW.PENDING;
+}
+
+function buildSuggestionId() {
+  return `match_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildIntroductionId() {
+  return `intro_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildSubscriptionId() {
+  return `mmsub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildNoteId() {
+  return `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildMessageId() {
+  return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function asServerIso(value) {
+  const ms = parseTimestampMs(value) || Date.parse(String(value || ""));
+  return ms ? new Date(ms).toISOString() : "";
+}
+
+async function fetchMemberLean(memberUid) {
+  const snap = await db.collection(MEMBERS_COLLECTION).doc(String(memberUid || "").trim()).get();
+  if (!snap.exists) return null;
+  const data = snap.data() || {};
+  await ensureMemberNameLower(snap.id, data);
+  return { uid: snap.id, ...data };
+}
+
+function buildLeanMemberCard(member) {
+  if (!member) return null;
+  return {
+    uid: member.uid || member.id || "",
+    profileNumber: String(member.profileNumber || "").trim(),
+    name: String(member.name || member.fullName || "").trim(),
+    firstName: firstName(member.name || member.fullName || ""),
+    age: computeAgeFromValue(member.dateOfBirth || member.dob),
+    gender: String(member.gender || "").trim(),
+    city: String(member.city || member.currentCity || "").trim(),
+    state: String(member.state || "").trim(),
+    profession: String(member.profession || "").trim(),
+    education: String(member.education || "").trim(),
+    educationLevel: String(member.educationLevel || "").trim(),
+    gotra: String(member.gotra || "").trim(),
+    manglik: String(member.manglik || "").trim(),
+    diet: String(member.diet || "").trim(),
+    tier: String(member.tier || member.plan || "").trim(),
+    isPaid: member.isPaid === true,
+    assignedMatchmakerUid: String(member.assignedMatchmakerUid || "").trim(),
+    assignedMatchmakerName: String(member.assignedMatchmakerName || "").trim(),
+    engagementStatus: String(member.engagementStatus || "searching").trim(),
+  };
+}
+
+async function enrichSuggestionForViewer(suggestion, viewerUid, viewerRole) {
+  const data = suggestion || {};
+  const [memberA, memberB] = await Promise.all([
+    fetchMemberLean(data.forMemberAUid),
+    fetchMemberLean(data.forMemberBUid),
+  ]);
+  const role = normalizeMemberRole(viewerRole);
+  const viewerIsMemberA = String(viewerUid || "") === String(data.forMemberAUid || "");
+  const viewerIsMemberB = String(viewerUid || "") === String(data.forMemberBUid || "");
+  const forMembers = role !== "ADMIN" && role !== "MATCHMAKER";
+  const otherMember = viewerIsMemberA ? memberB : memberA;
+  const safeOther = buildLeanMemberCard(otherMember || {});
+  if (safeOther) {
+    safeOther.photoUrl = otherMember ? await getMemberPhotoUrlForViewer(String(viewerUid || ""), otherMember) : null;
+  }
+  const memberASummary = buildLeanMemberCard(memberA || {});
+  const memberBSummary = buildLeanMemberCard(memberB || {});
+  if (memberASummary) memberASummary.photoUrl = memberA ? await getMemberPhotoUrlForViewer(String(viewerUid || ""), memberA) : null;
+  if (memberBSummary) memberBSummary.photoUrl = memberB ? await getMemberPhotoUrlForViewer(String(viewerUid || ""), memberB) : null;
+  return {
+    ...data,
+    memberA: forMembers ? undefined : memberASummary,
+    memberB: forMembers ? undefined : memberBSummary,
+    otherMember: forMembers ? safeOther : undefined,
+  };
+}
+
+async function loadSuggestionsForMember(memberUid, limitValue) {
+  const safeLimit = Math.max(1, Math.min(50, Math.round(Number(limitValue || 20) || 20)));
+  const [snapA, snapB] = await Promise.all([
+    db.collection(MATCH_SUGGESTIONS_COLLECTION).where("forMemberAUid", "==", String(memberUid || "").trim()).limit(safeLimit).get(),
+    db.collection(MATCH_SUGGESTIONS_COLLECTION).where("forMemberBUid", "==", String(memberUid || "").trim()).limit(safeLimit).get(),
+  ]);
+  const map = new Map();
+  [...snapA.docs, ...snapB.docs].forEach((doc) => map.set(doc.id, { suggestionId: doc.id, ...(doc.data() || {}) }));
+  return Array.from(map.values()).sort((left, right) => parseTimestampMs(right.createdAt) - parseTimestampMs(left.createdAt));
+}
+
+async function loadSuggestionsCreatedBy(matchmakerUid, limitValue) {
+  const safeLimit = Math.max(1, Math.min(100, Math.round(Number(limitValue || 50) || 50)));
+  const snap = await db.collection(MATCH_SUGGESTIONS_COLLECTION)
+    .where("createdBy", "==", String(matchmakerUid || "").trim())
+    .limit(safeLimit)
+    .get();
+  return snap.docs.map((doc) => ({ suggestionId: doc.id, ...(doc.data() || {}) }))
+    .sort((left, right) => parseTimestampMs(right.createdAt) - parseTimestampMs(left.createdAt));
+}
+
+async function readActiveMatchmakerSubscription(memberUid) {
+  const snap = await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
+    .where("memberUid", "==", String(memberUid || "").trim())
+    .where("status", "==", "active")
+    .limit(5)
+    .get();
+  const items = snap.docs.map((doc) => ({ subscriptionId: doc.id, ...(doc.data() || {}) }))
+    .sort((left, right) => parseTimestampMs(right.endDate) - parseTimestampMs(left.endDate));
+  return items[0] || null;
+}
+
+exports.createMatchmakerSubscriptionOrder = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    if (!isRazorpayConfigured()) throw matchmakerError(503, "Payment verification is not configured yet.");
+    await ensureMatchmakerDefaults();
+    const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get();
+    if (!memberSnap.exists) throw matchmakerError(404, "Member profile not found.");
+    const member = memberSnap.data() || {};
+    if (member.isPaid !== true) throw matchmakerError(403, "Matchmaker plans are available for paid members only.");
+    const activeSub = await readActiveMatchmakerSubscription(authUser.uid);
+    if (activeSub && parseTimestampMs(activeSub.endDate) > Date.now()) {
+      throw matchmakerError(409, "You already have an active matchmaker subscription.");
+    }
+    const plan = String(req.body?.plan || "").trim().toLowerCase();
+    const pricing = await readMatchmakerPricing();
+    const planConfig = pricing[plan];
+    if (!planConfig || planConfig.enabled === false) throw matchmakerError(400, "This matchmaker plan is not available.");
+    const currency = "INR";
+    const receipt = `pari-mm-${authUser.uid.slice(0, 8)}-${Date.now()}`;
+    const order = await createRazorpayOrder({
+      amount: Math.round(Number(planConfig.price || 0) * 100),
+      currency,
+      receipt,
+      notes: {
+        uid: authUser.uid,
+        purchaseType: "matchmaker",
+        plan,
+      },
+    });
+    const orderDoc = {
+      uid: authUser.uid,
+      purchaseType: "matchmaker",
+      plan,
+      amountInr: Math.round(Number(planConfig.price || 0)),
+      durationDays: Math.round(Number(planConfig.durationDays || 30)),
+      suggestionsPerWeek: Math.round(Number(planConfig.suggestionsPerWeek || 3)),
+      currency,
+      razorpayOrderId: String(order.id || ""),
+      status: "created",
+      source: String(req.body?.source || "matchmaker_card").trim(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    await db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderDoc.razorpayOrderId).set(orderDoc, { merge: true });
+    await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).set({
+      pendingPaymentOrderId: orderDoc.razorpayOrderId,
+      lastOrderId: orderDoc.razorpayOrderId,
+      paymentStatus: "pending",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    sendJson(req, res, 200, {
+      ok: true,
+      gateway: "razorpay",
+      orderId: orderDoc.razorpayOrderId,
+      amount: orderDoc.amountInr * 100,
+      currency,
+      keyId: razorpayKeyId(),
+      plan,
+      purchaseType: "matchmaker",
+    });
+  } catch (error) {
+    logger.error("createMatchmakerSubscriptionOrder failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to create matchmaker order." });
+  }
+});
+
+exports.enrollMatchmakerSubscription = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    if (!isRazorpayConfigured()) throw matchmakerError(503, "Payment verification is not configured yet.");
+    const orderId = String(req.body?.razorpay_order_id || req.body?.orderId || "").trim();
+    const paymentId = String(req.body?.razorpay_payment_id || req.body?.paymentId || "").trim();
+    const signature = String(req.body?.razorpay_signature || req.body?.signature || "").trim();
+    if (!orderId || !paymentId || !signature) throw matchmakerError(400, "Payment verification details are incomplete.");
+    if (!verifyRazorpaySignature(orderId, paymentId, signature)) throw matchmakerError(400, "Payment verification failed.");
+
+    await ensureMatchmakerDefaults();
+    const [orderSnap, memberSnap, existingPaymentSnap] = await Promise.all([
+      db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get(),
+      db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get(),
+      db.collection(PAYMENTS_COLLECTION).doc(paymentId).get(),
+    ]);
+    if (!orderSnap.exists) throw matchmakerError(404, "Payment order not found.");
+    if (!memberSnap.exists) throw matchmakerError(404, "Member profile not found.");
+    if (existingPaymentSnap.exists || String(orderSnap.data()?.status || "").toLowerCase() === "paid") {
+      const activeSub = await readActiveMatchmakerSubscription(authUser.uid);
+      sendJson(req, res, 200, {
+        ok: true,
+        alreadyProcessed: true,
+        subscriptionId: activeSub?.subscriptionId || "",
+        matchmakerUid: activeSub?.assignedMatchmakerUid || "",
+        matchmakerName: memberSnap.data()?.assignedMatchmakerName || "",
+        endDate: activeSub?.endDate || "",
+      });
+      return;
+    }
+
+    const orderData = orderSnap.data() || {};
+    if (String(orderData.uid || "") !== String(authUser.uid || "")) throw matchmakerError(403, "This payment order does not belong to your account.");
+    if (String(orderData.purchaseType || "").trim().toLowerCase() !== "matchmaker") throw matchmakerError(400, "This payment order is not for a matchmaker plan.");
+    const pricing = await readMatchmakerPricing();
+    const plan = String(orderData.plan || "").trim().toLowerCase();
+    const planConfig = pricing[plan];
+    if (!planConfig || planConfig.enabled === false) throw matchmakerError(400, "The selected matchmaker plan is no longer available.");
+    if (Math.round(Number(orderData.amountInr || 0)) !== Math.round(Number(planConfig.price || 0))) {
+      throw matchmakerError(409, "The payment amount no longer matches the plan.");
+    }
+    const memberData = memberSnap.data() || {};
+    if (memberData.isPaid !== true) throw matchmakerError(403, "Only paid members can activate a matchmaker plan.");
+    const activeSub = await readActiveMatchmakerSubscription(authUser.uid);
+    if (activeSub && parseTimestampMs(activeSub.endDate) > Date.now()) throw matchmakerError(409, "An active matchmaker subscription already exists.");
+
+    const { matchmakerUid, matchmakerName, isSticky } = await assignMatchmakerToMember(authUser.uid, { memberData });
+    const subscriptionId = buildSubscriptionId();
+    const now = new Date();
+    const endDate = Timestamp.fromDate(new Date(now.getTime() + (Math.round(Number(planConfig.durationDays || 30)) * 24 * 60 * 60 * 1000)));
+    const agentInfo = await resolveRevenueAgentForMember(memberData);
+    const revenueEvents = await buildMatchmakerRevenueEvents({
+      memberId: authUser.uid,
+      memberData,
+      orderData: {
+        amountInr: planConfig.price,
+        plan,
+        durationDays: planConfig.durationDays,
+        suggestionsPerWeek: planConfig.suggestionsPerWeek,
+      },
+      orderId,
+      paymentId,
+      agentInfo,
+      matchmakerUid,
+      subscriptionId,
+      createdBy: "system",
+      ipAddress: extractClientIp(req),
+      notes: `Matchmaker subscription activated for ${memberData.name || authUser.uid}`,
+    });
+
+    const paymentDoc = {
+      uid: authUser.uid,
+      paymentId,
+      orderId,
+      gateway: "razorpay",
+      signature,
+      purchaseType: "matchmaker",
+      plan,
+      amountInr: Number(planConfig.price || 0),
+      currency: "INR",
+      status: "paid",
+      createdAt: FieldValue.serverTimestamp(),
+    };
+
+    const batch = db.batch();
+    batch.set(db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscriptionId), {
+      subscriptionId,
+      memberUid: authUser.uid,
+      plan,
+      price: Number(planConfig.price || 0),
+      durationDays: Number(planConfig.durationDays || 30),
+      suggestionsPerWeek: Number(planConfig.suggestionsPerWeek || 3),
+      startDate: FieldValue.serverTimestamp(),
+      endDate,
+      status: "active",
+      razorpayOrderId: orderId,
+      razorpayPaymentId: paymentId,
+      pausedAt: null,
+      pausedReason: "",
+      resumedAt: null,
+      cancelledAt: null,
+      cancelReason: "",
+      assignedMatchmakerUid: matchmakerUid,
+      assignedAt: FieldValue.serverTimestamp(),
+      reassignmentHistory: [],
+      suggestionsDelivered: 0,
+      isStickyAssignment: isSticky,
+      source: String(req.body?.source || orderData.source || "dashboard_card").trim(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      version: 1,
+    });
+    batch.set(db.collection(MEMBERS_COLLECTION).doc(authUser.uid), {
+      matchmakerActive: true,
+      matchmakerEndDate: endDate,
+      matchmakerSubscriptionId: subscriptionId,
+      assignedMatchmakerUid: matchmakerUid,
+      assignedMatchmakerName: matchmakerName || "Your Matchmaker",
+      matchmakerAssignedAt: FieldValue.serverTimestamp(),
+      isStickyMatchmaker: isSticky,
+      lastMatchmakerUid: matchmakerUid,
+      matchmakerPlan: plan,
+      paymentGateway: "razorpay",
+      paymentCurrency: "INR",
+      lastPaymentId: paymentId,
+      lastOrderId: orderId,
+      lastPaymentAt: nowIso(),
+      lastPaymentAmount: Number(planConfig.price || 0),
+      paymentStatus: "paid",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    batch.set(db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId), {
+      status: "paid",
+      paymentId,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    batch.set(db.collection(PAYMENTS_COLLECTION).doc(paymentId), paymentDoc, { merge: true });
+    batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.paymentEventId), revenueEvents.paymentEvent, { merge: true });
+    if (revenueEvents.commissionEvent) {
+      batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.commissionEventId), revenueEvents.commissionEvent, { merge: true });
+    }
+    await batch.commit();
+
+    await Promise.all([
+      logActivity({
+        memberUid: authUser.uid,
+        actor: { type: "system", uid: "system", name: "Parichayam" },
+        eventType: ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_SUBSCRIBED,
+        details: { plan, price: Number(planConfig.price || 0), durationDays: Number(planConfig.durationDays || 30), isSticky },
+        relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
+      }),
+      logActivity({
+        memberUid: authUser.uid,
+        actor: { type: "system", uid: "system", name: "Parichayam" },
+        eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_ASSIGNED,
+        details: { matchmakerUid, matchmakerName, isSticky },
+        relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
+      }),
+    ]);
+
+    sendJson(req, res, 200, {
+      ok: true,
+      subscriptionId,
+      endDate: endDate.toDate().toISOString(),
+      matchmakerUid,
+      matchmakerName,
+      isSticky,
+    });
+  } catch (error) {
+    logger.error("enrollMatchmakerSubscription failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to activate matchmaker subscription." });
+  }
+});
+
+exports.cancelMatchmakerSubscription = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const subscription = await readActiveMatchmakerSubscription(authUser.uid);
+    if (!subscription) throw matchmakerError(404, "No active matchmaker subscription found.");
+    await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscription.subscriptionId).set({
+      status: "cancelled",
+      cancelledAt: FieldValue.serverTimestamp(),
+      cancelReason: String(req.body?.reason || "Cancelled by member").trim().slice(0, 500),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    await logActivity({
+      memberUid: authUser.uid,
+      actor: { type: "member", uid: authUser.uid, name: "Member" },
+      eventType: ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_CANCELLED,
+      details: { subscriptionId: subscription.subscriptionId, reason: String(req.body?.reason || "Cancelled by member").trim().slice(0, 500) },
+      relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscription.subscriptionId }],
+    });
+    sendJson(req, res, 200, { ok: true, subscriptionId: subscription.subscriptionId, activeUntil: subscription.endDate || "" });
+  } catch (error) {
+    logger.error("cancelMatchmakerSubscription failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to cancel subscription." });
+  }
+});
+
+exports.getMatchmakerEnrollmentInfo = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    await ensureMatchmakerDefaults();
+    const [pricing, proof, prompts, memberSnap] = await Promise.all([
+      readMatchmakerPricing(),
+      readMatchmakerProof(),
+      readMatchmakerPrompts(),
+      db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get(),
+    ]);
+    const member = memberSnap.exists ? (memberSnap.data() || {}) : {};
+    const subscription = await readActiveMatchmakerSubscription(authUser.uid);
+    sendJson(req, res, 200, {
+      ok: true,
+      pricing,
+      proof,
+      prompts,
+      member: {
+        uid: authUser.uid,
+        isPaid: member.isPaid === true,
+        assignedMatchmakerUid: String(member.assignedMatchmakerUid || "").trim(),
+        assignedMatchmakerName: String(member.assignedMatchmakerName || "").trim(),
+        matchmakerActive: member.matchmakerActive === true,
+        matchmakerPlan: String(member.matchmakerPlan || "").trim(),
+        matchmakerEndDate: member.matchmakerEndDate || "",
+      },
+      subscription,
+    });
+  } catch (error) {
+    logger.error("getMatchmakerEnrollmentInfo failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load matchmaker enrollment details." });
+  }
+});
+
+exports.searchMembersForMatchmaker = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const user = await verifyMatchmakerUser(req);
+    const body = req.method === "POST" ? (req.body || {}) : (req.query || {});
+    const limitValue = Math.max(1, Math.min(80, Math.round(Number(body.limit || 24) || 24)));
+    const cursor = String(body.cursor || "").trim();
+    const filterQuery = String(body.query || "").trim().toLowerCase();
+    const minAge = body.minAge !== undefined ? Math.max(18, Math.min(80, Math.round(Number(body.minAge) || 18))) : null;
+    const maxAge = body.maxAge !== undefined ? Math.max(18, Math.min(80, Math.round(Number(body.maxAge) || 80))) : null;
+    const snap = await db.collection(MEMBERS_COLLECTION).where("isPaid", "==", true).limit(500).get();
+    let results = await Promise.all(snap.docs.map(async (doc) => {
+      const data = { uid: doc.id, ...(doc.data() || {}) };
+      await ensureMemberNameLower(doc.id, data);
+      const card = buildLeanMemberCard(data);
+      card.photoUrl = await getMemberPhotoUrlForViewer(user.uid, data);
+      card.isAssignedToMe = String(data.assignedMatchmakerUid || "") === String(user.uid || "");
+      return { raw: data, card };
+    }));
+    results = results.filter(({ raw, card }) => {
+      if (!card) return false;
+      if (normalizeMemberRole(raw.role)) return normalizeMemberRole(raw.role) === "MEMBER";
+      return true;
+    }).filter(({ raw, card }) => {
+      if (body.gender && String(card.gender || "").trim().toLowerCase() !== String(body.gender).trim().toLowerCase()) return false;
+      if (body.city && String(card.city || "").trim().toLowerCase() !== String(body.city).trim().toLowerCase()) return false;
+      if (body.state && String(card.state || "").trim().toLowerCase() !== String(body.state).trim().toLowerCase()) return false;
+      if (body.gotra && String(card.gotra || "").trim().toLowerCase() !== String(body.gotra).trim().toLowerCase()) return false;
+      if (body.educationLevel && String(card.educationLevel || card.education || "").trim().toLowerCase() !== String(body.educationLevel).trim().toLowerCase()) return false;
+      if (body.profession && !String(card.profession || "").trim().toLowerCase().includes(String(body.profession).trim().toLowerCase())) return false;
+      if (body.manglik && String(card.manglik || "").trim().toLowerCase() !== String(body.manglik).trim().toLowerCase()) return false;
+      if (body.diet && String(card.diet || "").trim().toLowerCase() !== String(body.diet).trim().toLowerCase()) return false;
+      if (body.engagementStatus && String(card.engagementStatus || "").trim().toLowerCase() !== String(body.engagementStatus).trim().toLowerCase()) return false;
+      if (body.assignedOnly === true && !card.isAssignedToMe) return false;
+      if (minAge !== null && (card.age === null || card.age < minAge)) return false;
+      if (maxAge !== null && (card.age === null || card.age > maxAge)) return false;
+      if (filterQuery) {
+        const haystack = [
+          card.name,
+          card.profileNumber,
+          card.city,
+          card.state,
+          card.profession,
+          card.education,
+          card.gotra,
+        ].join(" ").toLowerCase();
+        if (!haystack.includes(filterQuery)) return false;
+      }
+      return true;
+    });
+    results.sort((left, right) => parseTimestampMs(right.raw.paidAt || right.raw.updatedAt) - parseTimestampMs(left.raw.paidAt || left.raw.updatedAt));
+    const cards = results.map((item) => item.card);
+    const startIndex = cursor ? Math.max(0, cards.findIndex((item) => String(item.uid || "") === cursor) + 1) : 0;
+    const slice = cards.slice(startIndex, startIndex + limitValue);
+    sendJson(req, res, 200, {
+      ok: true,
+      results: slice,
+      nextCursor: slice.length === limitValue ? String(slice[slice.length - 1].uid || "") : "",
+    });
+  } catch (error) {
+    logger.error("searchMembersForMatchmaker failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Search failed." });
+  }
+});
+
+exports.universalMemberSearch = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const user = await verifyMatchmakerUser(req);
+    const q = String(req.body?.query || req.query?.query || "").trim();
+    if (!q || q.length < 2) { sendJson(req, res, 200, { ok: true, results: [] }); return; }
+    let results = [];
+    if (/^P\d+$/i.test(q)) {
+      const snap = await db.collection(MEMBERS_COLLECTION).where("profileNumber", "==", q.toUpperCase()).limit(5).get();
+      results = snap.docs.map((doc) => ({ uid: doc.id, type: "pnumber_match", ...(doc.data() || {}) }));
+    } else if (/^[+\d\s-]{10,15}$/.test(q)) {
+      const normalized = normalizePhone(q);
+      const snap = await db.collection(MEMBERS_COLLECTION).where("phone", "==", normalized).limit(5).get();
+      results = snap.docs.map((doc) => ({ uid: doc.id, type: "phone_match", ...(doc.data() || {}) }));
+    } else if (q.includes("@")) {
+      const snap = await db.collection(MEMBERS_COLLECTION).where("email", "==", q.toLowerCase()).limit(5).get();
+      results = snap.docs.map((doc) => ({ uid: doc.id, type: "email_match", ...(doc.data() || {}) }));
+    } else {
+      const qLower = q.toLowerCase();
+      let snap = await db.collection(MEMBERS_COLLECTION)
+        .where("nameLower", ">=", qLower)
+        .where("nameLower", "<=", qLower + "\uf8ff")
+        .limit(10)
+        .get()
+        .catch(() => null);
+      if (!snap || snap.empty) {
+        const fallbackSnap = await db.collection(MEMBERS_COLLECTION).limit(300).get();
+        results = fallbackSnap.docs
+          .map((doc) => ({ uid: doc.id, ...(doc.data() || {}) }))
+          .filter((item) => String(item.name || item.fullName || "").trim().toLowerCase().includes(qLower))
+          .slice(0, 10)
+          .map((item) => ({ ...item, type: "name_match" }));
+      } else {
+        results = snap.docs.map((doc) => ({ uid: doc.id, type: "name_match", ...(doc.data() || {}) }));
+      }
+    }
+    const sanitized = await Promise.all(results.map(async (r) => {
+      await ensureMemberNameLower(r.uid, r);
+      return {
+        uid: r.uid,
+        profileNumber: r.profileNumber || "",
+        name: r.name || "",
+        firstName: firstName(r.name || ""),
+        age: computeAgeFromValue(r.dateOfBirth || r.dob),
+        city: r.city || "",
+        gender: r.gender || "",
+        tier: r.tier || r.plan || "",
+        isPaid: r.isPaid === true,
+        photoUrl: await getMemberPhotoUrlForViewer(user.uid, r),
+        assignedMatchmakerUid: r.assignedMatchmakerUid || "",
+        isAssignedToMe: String(r.assignedMatchmakerUid || "") === String(user.uid || ""),
+        matchType: r.type,
+      };
+    }));
+    sendJson(req, res, 200, { ok: true, results: sanitized });
+  } catch (error) {
+    logger.error("universalMemberSearch failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Search failed." });
+  }
+});
+
+exports.getMemberProfile360 = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const user = await verifyAuthenticatedUser(req);
+    const targetMemberUid = String(req.body?.memberUid || req.query?.memberUid || "").trim();
+    if (!targetMemberUid) throw matchmakerError(400, "memberUid required.");
+    const [viewerSnap, targetSnap] = await Promise.all([
+      db.collection(MEMBERS_COLLECTION).doc(user.uid).get(),
+      db.collection(MEMBERS_COLLECTION).doc(targetMemberUid).get(),
+    ]);
+    if (!targetSnap.exists) throw matchmakerError(404, "Member not found.");
+    if (!viewerSnap.exists) throw matchmakerError(404, "Viewer profile not found.");
+    const viewer = viewerSnap.data() || {};
+    const target = { uid: targetSnap.id, ...(targetSnap.data() || {}) };
+    await ensureMemberNameLower(target.uid, target);
+    const viewerRole = normalizeMemberRole(viewer.role || "MEMBER");
+    const isAdminUser = viewerRole === "ADMIN";
+    const isMatchmakerUser = viewerRole === "MATCHMAKER";
+    const isSelf = String(user.uid || "") === targetMemberUid;
+    const isAssignedMatchmaker = isMatchmakerUser && String(target.assignedMatchmakerUid || "") === String(user.uid || "");
+    if (!isAdminUser && !isMatchmakerUser && !isSelf) throw matchmakerError(403, "Not authorized to view this profile.");
+    const profile = {
+      uid: target.uid,
+      profileNumber: target.profileNumber || "",
+      name: target.name || "",
+      firstName: firstName(target.name || ""),
+      age: computeAgeFromValue(target.dateOfBirth || target.dob),
+      gender: target.gender || "",
+      phone: target.phone || "",
+      email: target.email || "",
+      city: target.city || "",
+      state: target.state || "",
+      profession: target.profession || "",
+      education: target.education || "",
+      educationLevel: target.educationLevel || "",
+      gotra: target.gotra || "",
+      kulaDeivam: target.kulaDeivam || "",
+      nativeVillage: target.nativeVillage || "",
+      manglik: target.manglik || "",
+      diet: target.diet || "",
+      tier: target.tier || target.plan || "",
+      isPaid: target.isPaid === true,
+      status: target.status || "",
+      verificationStatus: target.verificationStatus || {},
+      photoUrl: await getMemberPhotoUrlForViewer(user.uid, target),
+      family: (isAdminUser || isMatchmakerUser || isSelf) ? {
+        fatherName: target.fatherName || "",
+        motherName: target.motherName || "",
+        siblings: target.siblings || "",
+        nativeVillage: target.nativeVillage || "",
+      } : null,
+      preferences: target.preferences || {},
+      matchmaker: target.matchmakerActive ? {
+        uid: target.assignedMatchmakerUid || "",
+        name: target.assignedMatchmakerName || "",
+        endDate: target.matchmakerEndDate || "",
+        plan: target.matchmakerPlan || "",
+      } : null,
+    };
+    const activitySnap = await db.collection(ACTIVITY_LOG_COLLECTION)
+      .where("memberUid", "==", targetMemberUid)
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get()
+      .catch(() => ({ docs: [] }));
+    const activity = activitySnap.docs
+      .map((doc) => ({ id: doc.id, ...(doc.data() || {}) }))
+      .filter((entry) => {
+        if (isAdminUser) return true;
+        if (isAssignedMatchmaker) return entry.visibility?.matchmaker !== false;
+        if (isSelf) return entry.visibility?.member === true;
+        if (isMatchmakerUser) return false;
+        return false;
+      });
+    let notes = [];
+    if (isAdminUser || isAssignedMatchmaker) {
+      const notesSnap = await db.collection(MATCHMAKER_NOTES_COLLECTION)
+        .where("memberUid", "==", targetMemberUid)
+        .orderBy("createdAt", "desc")
+        .limit(20)
+        .get()
+        .catch(() => ({ docs: [] }));
+      notes = notesSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    }
+    const suggestionsRaw = await loadSuggestionsForMember(targetMemberUid, 40);
+    const suggestions = await Promise.all(suggestionsRaw.map((item) => enrichSuggestionForViewer(item, user.uid, viewerRole)));
+    sendJson(req, res, 200, {
+      ok: true,
+      profile,
+      activity,
+      notes,
+      suggestions,
+      viewerRole,
+      isAssignedMatchmaker,
+    });
+  } catch (error) {
+    logger.error("getMemberProfile360 failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Failed to load profile." });
+  }
+});
+
+exports.createMatchSuggestion = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const matchmaker = await verifyMatchmakerUser(req);
+    const settings = await readMatchmakerSettings();
+    const memberAUid = String(req.body?.memberAUid || "").trim();
+    const memberBUid = String(req.body?.memberBUid || "").trim();
+    const note = String(req.body?.matchmakerNote || "").trim();
+    const requestedScore = clampMatchScore(req.body?.matchScore || 70);
+    if (!memberAUid || !memberBUid) throw matchmakerError(400, "Both members are required.");
+    if (memberAUid === memberBUid) throw matchmakerError(400, "Cannot match member to themselves.");
+    if (note.length < settings.minimumNoteLength || note.length > settings.maximumNoteLength) {
+      throw matchmakerError(400, `Matchmaker note must be ${settings.minimumNoteLength}-${settings.maximumNoteLength} characters.`);
+    }
+    const [memberA, memberB] = await Promise.all([fetchMemberLean(memberAUid), fetchMemberLean(memberBUid)]);
+    if (!memberA || !memberB) throw matchmakerError(404, "Member(s) not found.");
+    if (!isAdminMemberRole(matchmaker.member.role) && String(memberA.assignedMatchmakerUid || "") !== String(matchmaker.uid || "")) {
+      throw matchmakerError(403, `Member A (${memberA.profileNumber || memberAUid}) is not assigned to you.`);
+    }
+    const recentA = await loadSuggestionsForMember(memberAUid, 100);
+    const duplicate = recentA.find((item) => {
+      const createdMs = parseTimestampMs(item.createdAt);
+      if (!createdMs || (Date.now() - createdMs) > (30 * 24 * 60 * 60 * 1000)) return false;
+      const pairMatches = (
+        (String(item.forMemberAUid || "") === memberAUid && String(item.forMemberBUid || "") === memberBUid) ||
+        (String(item.forMemberAUid || "") === memberBUid && String(item.forMemberBUid || "") === memberAUid)
+      );
+      return pairMatches && !isClosedSuggestionStatus(item.status);
+    });
+    if (duplicate) throw matchmakerError(409, "This pair already has an active suggestion in the last 30 days.");
+    const computed = computeCompatibilityScore(memberA, memberB, settings);
+    const suggestionId = buildSuggestionId();
+    const expiresAt = Timestamp.fromDate(new Date(Date.now() + (settings.suggestionExpiryDays * 24 * 60 * 60 * 1000)));
+    const payload = {
+      suggestionId,
+      forMemberAUid: memberAUid,
+      forMemberBUid: memberBUid,
+      createdBy: matchmaker.uid,
+      createdByName: String(matchmaker.member?.name || "Matchmaker").trim(),
+      createdAt: FieldValue.serverTimestamp(),
+      matchmakerNote: note,
+      matchScore: Math.max(requestedScore, computed.score),
+      compatibilityFactors: computed.factors,
+      status: SUGGESTION_STATUS_FLOW.PENDING,
+      memberAAction: "",
+      memberAActionAt: null,
+      memberAViewedAt: null,
+      memberADeclineReason: "",
+      memberBAction: "",
+      memberBActionAt: null,
+      memberBViewedAt: null,
+      memberBDeclineReason: "",
+      mutualInterestAt: null,
+      familyIntroducedAt: null,
+      closedAt: null,
+      closeReason: "",
+      expiresAt,
+      source: String(req.body?.source || "manual").trim() || "manual",
+      matchmakerSubscriptionId: String(req.body?.matchmakerSubscriptionId || memberA.matchmakerSubscriptionId || "").trim(),
+      version: 1,
+    };
+    await db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId).set(payload);
+    await Promise.all([
+      logActivity({
+        memberUid: memberAUid,
+        actor: { type: "matchmaker", uid: matchmaker.uid, name: matchmaker.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.SUGGESTION_CREATED,
+        details: { suggestedMemberUid: memberBUid, matchmakerNote: note, matchScore: payload.matchScore },
+        relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+      }),
+      logActivity({
+        memberUid: memberBUid,
+        actor: { type: "matchmaker", uid: matchmaker.uid, name: matchmaker.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.SUGGESTION_CREATED,
+        details: { suggestedMemberUid: memberAUid, matchmakerNote: note, matchScore: payload.matchScore },
+        relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+      }),
+    ]);
+    sendJson(req, res, 200, { ok: true, suggestionId, suggestion: { ...payload, createdAt: nowIso(), expiresAt: expiresAt.toDate().toISOString() } });
+  } catch (error) {
+    logger.error("createMatchSuggestion failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to create suggestion." });
+  }
+});
+
+exports.markSuggestionViewed = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const suggestionId = String(req.body?.suggestionId || "").trim();
+    if (!suggestionId) throw matchmakerError(400, "Suggestion ID is required.");
+    const suggestionRef = db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId);
+    const snap = await suggestionRef.get();
+    if (!snap.exists) throw matchmakerError(404, "Suggestion not found.");
+    const data = snap.data() || {};
+    if (![String(data.forMemberAUid || ""), String(data.forMemberBUid || "")].includes(String(authUser.uid || ""))) {
+      throw matchmakerError(403, "This suggestion is not for you.");
+    }
+    if (parseTimestampMs(data.expiresAt) && parseTimestampMs(data.expiresAt) < Date.now() && !isClosedSuggestionStatus(data.status)) {
+      throw matchmakerError(409, "This suggestion has expired.");
+    }
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
+    if (String(data.forMemberAUid || "") === String(authUser.uid || "")) updates.memberAViewedAt = FieldValue.serverTimestamp();
+    if (String(data.forMemberBUid || "") === String(authUser.uid || "")) updates.memberBViewedAt = FieldValue.serverTimestamp();
+    updates.status = resolveSuggestionStatusFromActions({ ...data, ...updates });
+    await suggestionRef.set(updates, { merge: true });
+    await logActivity({
+      memberUid: authUser.uid,
+      actor: { type: "member", uid: authUser.uid, name: "Member" },
+      eventType: ACTIVITY_EVENT_TYPES.SUGGESTION_VIEWED,
+      details: { suggestionId },
+      relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+      visibility: { member: true, matchmaker: true, admin: true },
+    });
+    sendJson(req, res, 200, { ok: true });
+  } catch (error) {
+    logger.error("markSuggestionViewed failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to mark suggestion viewed." });
+  }
+});
+
+exports.respondToMatchSuggestion = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const suggestionId = String(req.body?.suggestionId || "").trim();
+    const action = String(req.body?.action || "").trim().toLowerCase();
+    const declineReason = String(req.body?.declineReason || "").trim().slice(0, 300);
+    if (!suggestionId) throw matchmakerError(400, "Suggestion ID is required.");
+    if (!["liked", "declined"].includes(action)) throw matchmakerError(400, "Action must be liked or declined.");
+    const suggestionRef = db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId);
+    const snap = await suggestionRef.get();
+    if (!snap.exists) throw matchmakerError(404, "Suggestion not found.");
+    const data = snap.data() || {};
+    const isMemberA = String(data.forMemberAUid || "") === String(authUser.uid || "");
+    const isMemberB = String(data.forMemberBUid || "") === String(authUser.uid || "");
+    if (!isMemberA && !isMemberB) throw matchmakerError(403, "This suggestion is not for you.");
+    if (parseTimestampMs(data.expiresAt) && parseTimestampMs(data.expiresAt) < Date.now() && !isClosedSuggestionStatus(data.status)) {
+      throw matchmakerError(409, "This suggestion has expired.");
+    }
+    const updates = { updatedAt: FieldValue.serverTimestamp() };
+    if (isMemberA) {
+      updates.memberAAction = action;
+      updates.memberAActionAt = FieldValue.serverTimestamp();
+      updates.memberAViewedAt = data.memberAViewedAt || FieldValue.serverTimestamp();
+      updates.memberADeclineReason = action === "declined" ? declineReason : "";
+    }
+    if (isMemberB) {
+      updates.memberBAction = action;
+      updates.memberBActionAt = FieldValue.serverTimestamp();
+      updates.memberBViewedAt = data.memberBViewedAt || FieldValue.serverTimestamp();
+      updates.memberBDeclineReason = action === "declined" ? declineReason : "";
+    }
+    const nextStatus = resolveSuggestionStatusFromActions({ ...data, ...updates });
+    updates.status = nextStatus;
+    if (nextStatus === SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST) updates.mutualInterestAt = FieldValue.serverTimestamp();
+    if ([SUGGESTION_STATUS_FLOW.A_DECLINED, SUGGESTION_STATUS_FLOW.B_DECLINED].includes(nextStatus)) {
+      updates.closedAt = FieldValue.serverTimestamp();
+      updates.closeReason = declineReason || "declined";
+    }
+    await suggestionRef.set(updates, { merge: true });
+    const actorName = firstName((await fetchMemberLean(authUser.uid))?.name || "Member");
+    await logActivity({
+      memberUid: authUser.uid,
+      actor: { type: "member", uid: authUser.uid, name: actorName || "Member" },
+      eventType: action === "liked" ? ACTIVITY_EVENT_TYPES.SUGGESTION_LIKED : ACTIVITY_EVENT_TYPES.SUGGESTION_DECLINED,
+      details: { suggestionId, action, declineReason },
+      relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+      visibility: { member: true, matchmaker: true, admin: true },
+    });
+    if (nextStatus === SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST) {
+      await Promise.all([
+        logActivity({
+          memberUid: String(data.forMemberAUid || ""),
+          actor: { type: "system", uid: "system", name: "Parichayam" },
+          eventType: ACTIVITY_EVENT_TYPES.MUTUAL_INTEREST_REACHED,
+          details: { suggestionId, otherMemberUid: String(data.forMemberBUid || "") },
+          relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+        }),
+        logActivity({
+          memberUid: String(data.forMemberBUid || ""),
+          actor: { type: "system", uid: "system", name: "Parichayam" },
+          eventType: ACTIVITY_EVENT_TYPES.MUTUAL_INTEREST_REACHED,
+          details: { suggestionId, otherMemberUid: String(data.forMemberAUid || "") },
+          relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: suggestionId }],
+        }),
+      ]);
+    }
+    sendJson(req, res, 200, { ok: true, status: nextStatus });
+  } catch (error) {
+    logger.error("respondToMatchSuggestion failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to respond to suggestion." });
+  }
+});
+
+exports.getMemberSuggestions = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const [viewerSnap, settings] = await Promise.all([
+      db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get(),
+      readMatchmakerSettings(),
+    ]);
+    const viewerRole = normalizeMemberRole(viewerSnap.data()?.role || "MEMBER");
+    const suggestions = await loadSuggestionsForMember(authUser.uid, 40);
+    const enriched = await Promise.all(suggestions
+      .filter((item) => !isClosedSuggestionStatus(item.status))
+      .map(async (item) => {
+        const out = await enrichSuggestionForViewer(item, authUser.uid, viewerRole);
+        if (out.otherMember) {
+          const viewerResponded = (String(item.forMemberAUid || "") === String(authUser.uid || "") && !!String(item.memberAAction || "").trim()) ||
+            (String(item.forMemberBUid || "") === String(authUser.uid || "") && !!String(item.memberBAction || "").trim());
+          if (viewerResponded) {
+            const target = await fetchMemberLean(out.otherMember.uid);
+            out.otherMember.photoUrl = target ? (target.profilePhotoUrl || target.photoUrl || out.otherMember.photoUrl || null) : out.otherMember.photoUrl;
+          }
+          if (String(item.status || "") !== SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST && settings.revealFullNameOnMutualInterest) {
+            out.otherMember.name = out.otherMember.firstName || out.otherMember.name;
+          }
+        }
+        return out;
+      }));
+    sendJson(req, res, 200, { ok: true, suggestions: enriched });
+  } catch (error) {
+    logger.error("getMemberSuggestions failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load suggestions." });
+  }
+});
+
+exports.createFamilyIntroduction = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const user = await verifyMatchmakerUser(req);
+    const suggestionId = String(req.body?.matchSuggestionId || "").trim();
+    if (!suggestionId) throw matchmakerError(400, "matchSuggestionId is required.");
+    const suggestionSnap = await db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId).get();
+    if (!suggestionSnap.exists) throw matchmakerError(404, "Suggestion not found.");
+    const suggestion = suggestionSnap.data() || {};
+    if (!isAdminMemberRole(user.member.role) && String(suggestion.forMemberAUid || "") !== String(req.body?.memberAUid || suggestion.forMemberAUid || "")) {
+      await verifyAssignedMatchmaker(req, suggestion.forMemberAUid);
+    }
+    if (![SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST, SUGGESTION_STATUS_FLOW.FAMILY_INTRODUCED, SUGGESTION_STATUS_FLOW.IN_DISCUSSION].includes(String(suggestion.status || ""))) {
+      throw matchmakerError(409, "Family introduction is allowed after mutual interest.");
+    }
+    const introductionId = buildIntroductionId();
+    const payload = {
+      introductionId,
+      matchSuggestionId: suggestionId,
+      memberAUid: String(suggestion.forMemberAUid || "").trim(),
+      memberBUid: String(suggestion.forMemberBUid || "").trim(),
+      createdBy: user.uid,
+      scheduledCallAt: req.body?.scheduledCallAt ? Timestamp.fromDate(new Date(req.body.scheduledCallAt)) : null,
+      memberAFamilyContact: req.body?.memberAFamilyContact || {},
+      memberBFamilyContact: req.body?.memberBFamilyContact || {},
+      talkingPoints: String(req.body?.talkingPoints || "").trim().slice(0, 2000),
+      notesForFamilyA: String(req.body?.notesForFamilyA || "").trim().slice(0, 2000),
+      notesForFamilyB: String(req.body?.notesForFamilyB || "").trim().slice(0, 2000),
+      status: "scheduled",
+      outcome: "",
+      outcomeNote: "",
+      outcomeAt: null,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    await db.collection(FAMILY_INTRODUCTIONS_COLLECTION).doc(introductionId).set(payload);
+    await db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId).set({
+      status: SUGGESTION_STATUS_FLOW.FAMILY_INTRODUCED,
+      familyIntroducedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    await Promise.all([
+      logActivity({
+        memberUid: payload.memberAUid,
+        actor: { type: "matchmaker", uid: user.uid, name: user.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.FAMILY_INTRODUCTION_CREATED,
+        details: { introductionId, otherMemberUid: payload.memberBUid, scheduledCallAt: req.body?.scheduledCallAt || "" },
+        relatedDocs: [{ collection: FAMILY_INTRODUCTIONS_COLLECTION, id: introductionId }],
+      }),
+      logActivity({
+        memberUid: payload.memberBUid,
+        actor: { type: "matchmaker", uid: user.uid, name: user.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.FAMILY_INTRODUCTION_CREATED,
+        details: { introductionId, otherMemberUid: payload.memberAUid, scheduledCallAt: req.body?.scheduledCallAt || "" },
+        relatedDocs: [{ collection: FAMILY_INTRODUCTIONS_COLLECTION, id: introductionId }],
+      }),
+    ]);
+    sendJson(req, res, 200, { ok: true, introductionId });
+  } catch (error) {
+    logger.error("createFamilyIntroduction failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to create family introduction." });
+  }
+});
+
+exports.updateIntroductionOutcome = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const user = await verifyMatchmakerUser(req);
+    const introductionId = String(req.body?.introductionId || "").trim();
+    const outcome = String(req.body?.outcome || "").trim().toLowerCase();
+    if (!introductionId) throw matchmakerError(400, "introductionId is required.");
+    if (!["in_discussion", "engaged", "not_proceeding"].includes(outcome)) throw matchmakerError(400, "Invalid outcome.");
+    const ref = db.collection(FAMILY_INTRODUCTIONS_COLLECTION).doc(introductionId);
+    const snap = await ref.get();
+    if (!snap.exists) throw matchmakerError(404, "Introduction not found.");
+    const intro = snap.data() || {};
+    if (!isAdminMemberRole(user.member.role)) await verifyAssignedMatchmaker(req, intro.memberAUid);
+    await ref.set({
+      outcome,
+      outcomeNote: String(req.body?.outcomeNote || "").trim().slice(0, 2000),
+      outcomeAt: FieldValue.serverTimestamp(),
+      status: outcome === "in_discussion" ? "completed" : (outcome === "engaged" ? "completed" : "cancelled"),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    const suggestionPatch = outcome === "engaged"
+      ? { status: SUGGESTION_STATUS_FLOW.ENGAGED, closedAt: FieldValue.serverTimestamp(), closeReason: "engaged", updatedAt: FieldValue.serverTimestamp() }
+      : outcome === "not_proceeding"
+        ? { status: SUGGESTION_STATUS_FLOW.CLOSED, closedAt: FieldValue.serverTimestamp(), closeReason: "not_proceeding", updatedAt: FieldValue.serverTimestamp() }
+        : { status: SUGGESTION_STATUS_FLOW.IN_DISCUSSION, updatedAt: FieldValue.serverTimestamp() };
+    await db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(String(intro.matchSuggestionId || "")).set(suggestionPatch, { merge: true });
+    if (outcome === "engaged") {
+      const batch = db.batch();
+      [intro.memberAUid, intro.memberBUid].forEach((memberUid) => {
+        batch.set(db.collection(MEMBERS_COLLECTION).doc(String(memberUid || "").trim()), {
+          engagementStatus: "engaged",
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      });
+      await batch.commit();
+    }
+    await Promise.all([
+      logActivity({
+        memberUid: intro.memberAUid,
+        actor: { type: "matchmaker", uid: user.uid, name: user.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.FAMILY_INTRODUCTION_OUTCOME_RECORDED,
+        details: { introductionId, outcome },
+        relatedDocs: [{ collection: FAMILY_INTRODUCTIONS_COLLECTION, id: introductionId }],
+      }),
+      logActivity({
+        memberUid: intro.memberBUid,
+        actor: { type: "matchmaker", uid: user.uid, name: user.member?.name || "Matchmaker" },
+        eventType: ACTIVITY_EVENT_TYPES.FAMILY_INTRODUCTION_OUTCOME_RECORDED,
+        details: { introductionId, outcome },
+        relatedDocs: [{ collection: FAMILY_INTRODUCTIONS_COLLECTION, id: introductionId }],
+      }),
+    ]);
+    sendJson(req, res, 200, { ok: true, outcome });
+  } catch (error) {
+    logger.error("updateIntroductionOutcome failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to update introduction outcome." });
+  }
+});
+
+exports.addMatchmakerNote = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const matchmaker = await verifyMatchmakerUser(req);
+    const settings = await readMatchmakerSettings();
+    const memberUid = String(req.body?.memberUid || "").trim();
+    const noteText = String(req.body?.noteText || "").trim();
+    const category = MATCHMAKER_NOTE_CATEGORIES.includes(String(req.body?.category || "").trim()) ? String(req.body?.category || "").trim() : "general";
+    if (!memberUid) throw matchmakerError(400, "memberUid is required.");
+    if (!isAdminMemberRole(matchmaker.member.role)) {
+      const targetSnap = await db.collection(MEMBERS_COLLECTION).doc(memberUid).get();
+      if (!targetSnap.exists || String(targetSnap.data()?.assignedMatchmakerUid || "") !== String(matchmaker.uid || "")) {
+        throw matchmakerError(403, "Not assigned to this member.");
+      }
+    }
+    if (noteText.length < settings.minimumNoteLength) throw matchmakerError(400, `Note must be at least ${settings.minimumNoteLength} characters.`);
+    const noteId = buildNoteId();
+    await db.collection(MATCHMAKER_NOTES_COLLECTION).doc(noteId).set({
+      noteId,
+      memberUid,
+      authorUid: matchmaker.uid,
+      authorName: matchmaker.member?.name || "Matchmaker",
+      noteText: noteText.slice(0, 2000),
+      category,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    await logActivity({
+      memberUid,
+      actor: { type: "matchmaker", uid: matchmaker.uid, name: matchmaker.member?.name || "Matchmaker" },
+      eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_NOTE_ADDED,
+      details: { category, preview: noteText.slice(0, 100) },
+      visibility: { member: false, matchmaker: true, admin: true },
+      relatedDocs: [{ collection: MATCHMAKER_NOTES_COLLECTION, id: noteId }],
+    });
+    sendJson(req, res, 200, { ok: true, noteId });
+  } catch (error) {
+    logger.error("addMatchmakerNote failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to save note." });
+  }
+});
+
+exports.sendMatchmakerMessage = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const viewerSnap = await db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get();
+    if (!viewerSnap.exists) throw matchmakerError(404, "Sender profile not found.");
+    const sender = viewerSnap.data() || {};
+    const senderRole = normalizeMemberRole(sender.role || "MEMBER");
+    const memberUid = String(req.body?.memberUid || "").trim();
+    const text = String(req.body?.text || "").trim();
+    const attachmentUrl = String(req.body?.attachmentUrl || "").trim();
+    const attachmentType = MATCHMAKER_MESSAGE_ATTACHMENT_TYPES.includes(String(req.body?.attachmentType || "").trim()) ? String(req.body?.attachmentType || "").trim() : "";
+    if (!memberUid) throw matchmakerError(400, "memberUid is required.");
+    if (!text && !attachmentUrl) throw matchmakerError(400, "Message text or attachment is required.");
+    const memberSnap = await db.collection(MEMBERS_COLLECTION).doc(memberUid).get();
+    if (!memberSnap.exists) throw matchmakerError(404, "Member not found.");
+    const memberData = memberSnap.data() || {};
+    const assignedMatchmakerUid = String(memberData.assignedMatchmakerUid || "").trim();
+    let conversationId = "";
+    let toUid = "";
+    let fromRole = "member";
+    if (senderRole === "ADMIN") {
+      toUid = String(req.body?.toUid || memberUid).trim();
+      conversationId = buildMatchmakerConversationId(String(req.body?.matchmakerUid || assignedMatchmakerUid).trim(), memberUid);
+      fromRole = "admin";
+    } else if (senderRole === "MATCHMAKER") {
+      if (assignedMatchmakerUid !== String(authUser.uid || "")) throw matchmakerError(403, "This member is assigned to another matchmaker.");
+      toUid = memberUid;
+      conversationId = buildMatchmakerConversationId(authUser.uid, memberUid);
+      fromRole = "matchmaker";
+    } else {
+      if (!assignedMatchmakerUid) throw matchmakerError(409, "You do not have an assigned matchmaker yet.");
+      if (String(authUser.uid || "") !== memberUid) throw matchmakerError(403, "Members can only message about their own account.");
+      toUid = assignedMatchmakerUid;
+      conversationId = buildMatchmakerConversationId(assignedMatchmakerUid, memberUid);
+      fromRole = "member";
+    }
+    const messageId = buildMessageId();
+    await db.collection(MATCHMAKER_MESSAGES_COLLECTION).doc(messageId).set({
+      messageId,
+      conversationId,
+      fromUid: authUser.uid,
+      toUid,
+      fromRole: fromRole === "admin" ? "admin" : (fromRole === "matchmaker" ? "matchmaker" : "member"),
+      text: text.slice(0, 4000),
+      attachmentUrl: attachmentUrl || null,
+      attachmentType,
+      readAt: null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    await logActivity({
+      memberUid,
+      actor: { type: fromRole === "matchmaker" ? "matchmaker" : (fromRole === "admin" ? "admin" : "member"), uid: authUser.uid, name: sender.name || "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_MESSAGE_SENT,
+      details: { conversationId, preview: text.slice(0, 100), attachmentType },
+      visibility: { member: true, matchmaker: true, admin: true },
+      relatedDocs: [{ collection: MATCHMAKER_MESSAGES_COLLECTION, id: messageId }],
+    });
+    sendJson(req, res, 200, { ok: true, messageId, conversationId });
+  } catch (error) {
+    logger.error("sendMatchmakerMessage failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to send message." });
+  }
+});
+
+exports.getMyConversations = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const [sentSnap, receivedSnap] = await Promise.all([
+      db.collection(MATCHMAKER_MESSAGES_COLLECTION).where("fromUid", "==", authUser.uid).limit(200).get().catch(() => ({ docs: [] })),
+      db.collection(MATCHMAKER_MESSAGES_COLLECTION).where("toUid", "==", authUser.uid).limit(200).get().catch(() => ({ docs: [] })),
+    ]);
+    const all = [...sentSnap.docs, ...receivedSnap.docs]
+      .map((doc) => ({ id: doc.id, ...(doc.data() || {}) }))
+      .sort((left, right) => parseTimestampMs(right.createdAt) - parseTimestampMs(left.createdAt));
+    const map = new Map();
+    for (const message of all) {
+      const conversationId = String(message.conversationId || "").trim();
+      if (!conversationId || map.has(conversationId)) continue;
+      const memberUid = conversationId.split("_").slice(-1)[0] || "";
+      const member = await fetchMemberLean(memberUid);
+      map.set(conversationId, {
+        conversationId,
+        member: buildLeanMemberCard(member || {}),
+        lastMessage: message.text || "",
+        lastAttachmentType: message.attachmentType || "",
+        lastMessageAt: message.createdAt || "",
+        unread: 0,
+      });
+    }
+    all.forEach((message) => {
+      if (String(message.toUid || "") !== String(authUser.uid || "")) return;
+      if (message.readAt) return;
+      const convo = map.get(String(message.conversationId || "").trim());
+      if (convo) convo.unread += 1;
+    });
+    sendJson(req, res, 200, { ok: true, conversations: Array.from(map.values()) });
+  } catch (error) {
+    logger.error("getMyConversations failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load conversations." });
+  }
+});
+
+exports.getMessagesForConversation = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const conversationId = String(req.body?.conversationId || req.query?.conversationId || "").trim();
+    if (!conversationId) throw matchmakerError(400, "conversationId is required.");
+    const snap = await db.collection(MATCHMAKER_MESSAGES_COLLECTION)
+      .where("conversationId", "==", conversationId)
+      .orderBy("createdAt", "asc")
+      .limit(300)
+      .get();
+    const messages = snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    if (messages.length && !messages.some((message) => String(message.fromUid || "") === String(authUser.uid || "") || String(message.toUid || "") === String(authUser.uid || ""))) {
+      throw matchmakerError(403, "You are not part of this conversation.");
+    }
+    const unreadRefs = snap.docs.filter((doc) => {
+      const data = doc.data() || {};
+      return String(data.toUid || "") === String(authUser.uid || "") && !data.readAt;
+    });
+    await Promise.all(unreadRefs.map((doc) => doc.ref.set({ readAt: FieldValue.serverTimestamp() }, { merge: true })));
+    sendJson(req, res, 200, { ok: true, messages });
+  } catch (error) {
+    logger.error("getMessagesForConversation failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load messages." });
+  }
+});
+
+exports.adminReassignMatchmaker = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const memberUid = String(req.body?.memberUid || "").trim();
+    const newMatchmakerUid = String(req.body?.newMatchmakerUid || "").trim();
+    const reason = String(req.body?.reason || "").trim().slice(0, 500);
+    if (!memberUid || !newMatchmakerUid) throw matchmakerError(400, "memberUid and newMatchmakerUid are required.");
+    const result = await db.runTransaction(async (transaction) => {
+      const memberRef = db.collection(MEMBERS_COLLECTION).doc(memberUid);
+      const memberSnap = await transaction.get(memberRef);
+      if (!memberSnap.exists) throw matchmakerError(404, "Member not found.");
+      const oldMatchmakerUid = String(memberSnap.data()?.assignedMatchmakerUid || "").trim();
+      const newMatchmakerRef = db.collection(MEMBERS_COLLECTION).doc(newMatchmakerUid);
+      const newMatchmakerSnap = await transaction.get(newMatchmakerRef);
+      if (!newMatchmakerSnap.exists || !isMatchmakerMemberRole(newMatchmakerSnap.data()?.role)) throw matchmakerError(400, "Invalid new matchmaker.");
+      const newMatchmakerName = String(newMatchmakerSnap.data()?.name || "Matchmaker").trim();
+      transaction.set(memberRef, {
+        assignedMatchmakerUid: newMatchmakerUid,
+        assignedMatchmakerName: newMatchmakerName,
+        matchmakerAssignedAt: FieldValue.serverTimestamp(),
+        lastMatchmakerUid: newMatchmakerUid,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      const subQuery = db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
+        .where("memberUid", "==", memberUid)
+        .where("status", "==", "active")
+        .limit(1);
+      const subSnap = await transaction.get(subQuery);
+      if (!subSnap.empty) {
+        const subRef = subSnap.docs[0].ref;
+        const subData = subSnap.docs[0].data() || {};
+        transaction.set(subRef, {
+          assignedMatchmakerUid: newMatchmakerUid,
+          reassignmentHistory: [...(Array.isArray(subData.reassignmentHistory) ? subData.reassignmentHistory : []), {
+            fromMatchmakerUid: oldMatchmakerUid,
+            toMatchmakerUid: newMatchmakerUid,
+            byAdminUid: adminUser.uid,
+            reason,
+            at: nowIso(),
+          }],
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+      return { oldMatchmakerUid, newMatchmakerUid, newMatchmakerName };
+    });
+    await logActivity({
+      memberUid,
+      actor: { type: "admin", uid: adminUser.uid, name: "Admin" },
+      eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_REASSIGNED,
+      details: result,
+      visibility: { member: true, matchmaker: true, admin: true },
+    });
+    sendJson(req, res, 200, { ok: true, ...result });
+  } catch (error) {
+    logger.error("adminReassignMatchmaker failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to reassign matchmaker." });
+  }
+});
+
+exports.getMatchmakerStats = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    const user = await verifyMatchmakerUser(req);
+    const scope = isAdminMemberRole(user.member.role) && String(req.body?.scope || req.query?.scope || "").trim().toLowerCase() === "global"
+      ? "global"
+      : "mine";
+    const [subsSnap, suggestions] = await Promise.all([
+      scope === "global"
+        ? db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).limit(500).get()
+        : db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).where("assignedMatchmakerUid", "==", user.uid).limit(500).get(),
+      scope === "global" ? db.collection(MATCH_SUGGESTIONS_COLLECTION).limit(500).get() : db.collection(MATCH_SUGGESTIONS_COLLECTION).where("createdBy", "==", user.uid).limit(500).get(),
+    ]);
+    const subscriptions = subsSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    const suggestionRows = suggestions.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    const byStatus = {};
+    suggestionRows.forEach((row) => {
+      const status = String(row.status || "pending").trim().toLowerCase();
+      byStatus[status] = (byStatus[status] || 0) + 1;
+    });
+    const activeSubs = subscriptions.filter((item) => String(item.status || "").toLowerCase() === "active");
+    sendJson(req, res, 200, {
+      ok: true,
+      scope,
+      activeSubscriptions: activeSubs.length,
+      expiredSubscriptions: subscriptions.filter((item) => String(item.status || "").toLowerCase() === "expired").length,
+      suggestionsCreated: suggestionRows.length,
+      statusBreakdown: byStatus,
+      mutualInterest: byStatus[SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST] || 0,
+      engaged: byStatus[SUGGESTION_STATUS_FLOW.ENGAGED] || 0,
+      closed: byStatus[SUGGESTION_STATUS_FLOW.CLOSED] || 0,
+      myMembers: scope === "global" ? undefined : activeSubs.length,
+    });
+  } catch (error) {
+    logger.error("getMatchmakerStats failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load matchmaker stats." });
+  }
+});
+
+exports.recordAnalyticsEvent = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const authUser = await verifyAuthenticatedUser(req);
+    const eventType = String(req.body?.eventType || "").trim();
+    if (!eventType) throw matchmakerError(400, "eventType is required.");
+    const sinceMs = Date.now() - 60000;
+    const snap = await db.collection(ANALYTICS_EVENTS_COLLECTION)
+      .where("memberUid", "==", authUser.uid)
+      .where("eventType", "==", eventType)
+      .limit(20)
+      .get()
+      .catch(() => ({ docs: [] }));
+    const recent = snap.docs.find((doc) => parseTimestampMs(doc.data()?.createdAt) >= sinceMs);
+    if (recent) {
+      sendJson(req, res, 200, { ok: true, throttled: true, eventId: recent.id });
+      return;
+    }
+    const eventId = `ae_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.collection(ANALYTICS_EVENTS_COLLECTION).doc(eventId).set({
+      eventId,
+      memberUid: authUser.uid,
+      eventType,
+      details: req.body?.details || {},
+      source: String(req.body?.source || "").trim(),
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    sendJson(req, res, 200, { ok: true, eventId });
+  } catch (error) {
+    logger.error("recordAnalyticsEvent failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to record analytics event." });
+  }
+});
+
+exports.adminSaveMatchmakerSettings = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const batch = db.batch();
+    if (req.body?.pricing !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(MATCHMAKER_PRICING_KEY), {
+        value: normalizeMatchmakerPricing(req.body.pricing),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.settings !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(MATCHMAKER_SETTINGS_KEY), {
+        value: normalizeMatchmakerSettings(req.body.settings),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.proof !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(MATCHMAKER_PROOF_KEY), {
+        value: normalizeMatchmakerProof(req.body.proof),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    if (req.body?.prompts !== undefined) {
+      batch.set(db.collection(APP_STATE_COLLECTION).doc(MATCHMAKER_PROMPTS_KEY), {
+        value: sanitizePromptList(req.body.prompts),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: adminUser.uid,
+      }, { merge: true });
+    }
+    await batch.commit();
+    await ensureMatchmakerDefaults();
+    sendJson(req, res, 200, { ok: true });
+  } catch (error) {
+    logger.error("adminSaveMatchmakerSettings failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to save matchmaker settings." });
+  }
+});
+
+exports.adminGetSystemPulse = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  try {
+    await verifyAdminUser(req);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const [subsSnap, suggestionSnap, complaintSnap] = await Promise.all([
+      db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).limit(500).get().catch(() => ({ docs: [] })),
+      db.collection(MATCH_SUGGESTIONS_COLLECTION).limit(500).get().catch(() => ({ docs: [] })),
+      db.collection(COMPLAINTS_COLLECTION).limit(200).get().catch(() => ({ docs: [] })),
+    ]);
+    const subscriptions = subsSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    const suggestions = suggestionSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() || {}) }));
+    const activeSubscriptions = subscriptions.filter((item) => String(item.status || "").toLowerCase() === "active");
+    const mrr = activeSubscriptions.reduce((sum, item) => {
+      const days = Math.max(1, Math.round(Number(item.durationDays || 30) || 30));
+      return sum + roundMoney((Number(item.price || 0) / days) * 30);
+    }, 0);
+    const suggestionsToday = suggestions.filter((item) => parseTimestampMs(item.createdAt) >= todayStart.getTime()).length;
+    const mutual = suggestions.filter((item) => String(item.status || "").toLowerCase() === SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST).length;
+    const engaged = suggestions.filter((item) => String(item.status || "").toLowerCase() === SUGGESTION_STATUS_FLOW.ENGAGED).length;
+    sendJson(req, res, 200, {
+      ok: true,
+      activeMembers: activeSubscriptions.length,
+      mrr: roundMoney(mrr),
+      suggestionsToday,
+      mutual,
+      engaged,
+      complaints: complaintSnap.docs.length,
+    });
+  } catch (error) {
+    logger.error("adminGetSystemPulse failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to load system pulse." });
+  }
+});
+
+exports.expireOldSuggestions = onSchedule({
+  schedule: "0 3 * * *",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const settings = await readMatchmakerSettings();
+  if (settings.autoCloseExpired === false) return;
+  const now = new Date();
+  const snap = await db.collection(MATCH_SUGGESTIONS_COLLECTION)
+    .where("expiresAt", "<=", now)
+    .limit(500)
+    .get()
+    .catch(() => ({ docs: [] }));
+  const writes = [];
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    if (isClosedSuggestionStatus(data.status)) continue;
+    writes.push(doc.ref.set({
+      status: SUGGESTION_STATUS_FLOW.CLOSED,
+      closedAt: FieldValue.serverTimestamp(),
+      closeReason: "expired",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }));
+    writes.push(logActivity({
+      memberUid: String(data.forMemberAUid || ""),
+      actor: { type: "system", uid: "system", name: "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.SYSTEM_SUGGESTION_EXPIRED,
+      details: { suggestionId: doc.id },
+      relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: doc.id }],
+      visibility: { member: true, matchmaker: true, admin: true },
+    }));
+    writes.push(logActivity({
+      memberUid: String(data.forMemberBUid || ""),
+      actor: { type: "system", uid: "system", name: "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.SYSTEM_SUGGESTION_EXPIRED,
+      details: { suggestionId: doc.id },
+      relatedDocs: [{ collection: MATCH_SUGGESTIONS_COLLECTION, id: doc.id }],
+      visibility: { member: true, matchmaker: true, admin: true },
+    }));
+  }
+  await Promise.all(writes);
+});
+
+exports.expireMatchmakerSubscriptions = onSchedule({
+  schedule: "0 4 * * *",
+  timeZone: "Asia/Kolkata",
+  region: "us-central1",
+}, async () => {
+  const now = new Date();
+  const snap = await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
+    .where("status", "==", "active")
+    .where("endDate", "<=", now)
+    .limit(500)
+    .get()
+    .catch(() => ({ docs: [] }));
+  const writes = [];
+  for (const doc of snap.docs) {
+    const sub = doc.data() || {};
+    writes.push(doc.ref.set({
+      status: "expired",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }));
+    writes.push(db.collection(MEMBERS_COLLECTION).doc(String(sub.memberUid || "")).set({
+      matchmakerActive: false,
+      matchmakerSubscriptionId: "",
+      matchmakerPlan: "",
+      assignedMatchmakerUid: "",
+      assignedMatchmakerName: "",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true }));
+    writes.push(logActivity({
+      memberUid: String(sub.memberUid || ""),
+      actor: { type: "system", uid: "system", name: "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.SYSTEM_SUBSCRIPTION_EXPIRED,
+      details: { subscriptionId: doc.id },
+      relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: doc.id }],
+    }));
+  }
+  await Promise.all(writes);
+});
