@@ -305,6 +305,28 @@
       ]
     },
     {
+      "collectionGroup": "revenueEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "eventType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "commissionUnlockedNotifiedAt",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "commissionUnlockNotifyAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "agents",
       "queryScope": "COLLECTION",
       "fields": [

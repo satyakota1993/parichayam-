@@ -1479,6 +1479,8 @@ function buildMembershipRevenueEvents(params) {
     eventType: "agent_commission",
     amount: agentCommissionAmount,
     relatedEventId: membershipEventId,
+    commissionUnlockNotifyAt: lockExpiresAt,
+    commissionUnlockedNotifiedAt: null,
   } : null;
 
   return { membershipEventId, membershipEvent, commissionEventId, commissionEvent };
@@ -4703,6 +4705,76 @@ exports.adminBackfillRevenueEvents = onRequest({ region: "us-central1" }, async 
   }
 });
 
+// Admin: Backfill Commission Unlock Notification Fields
+exports.adminBackfillCommissionNotifyFields = onRequest({ region: "us-central1" }, async (req, res) => {
+  setCorsHeaders(req, res);
+  if (req.method === "OPTIONS") { res.status(204).send(""); return; }
+  if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
+  try {
+    const adminUser = await verifyAdminUser(req);
+    const dryRun = req.body?.dryRun !== false;
+    const limit = Math.max(1, Math.min(10000, parseInt(req.body?.limit ?? req.query?.limit ?? 1000, 10) || 1000));
+    const snap = await db.collection(REVENUE_EVENTS_COLLECTION)
+      .where("eventType", "==", "agent_commission")
+      .where("status", "==", "recorded")
+      .limit(limit)
+      .get();
+    let batch = db.batch();
+    let pendingWrites = 0;
+    let scanned = 0;
+    let wouldUpdate = 0;
+    let updated = 0;
+    let skippedMissingLockExpiresAt = 0;
+    const sampleIds = [];
+
+    async function flushBatch(force) {
+      if (!pendingWrites || (!force && pendingWrites < 400)) return;
+      await batch.commit();
+      batch = db.batch();
+      pendingWrites = 0;
+    }
+
+    for (const doc of snap.docs) {
+      scanned++;
+      const data = doc.data() || {};
+      const update = {};
+      if (!Object.prototype.hasOwnProperty.call(data, "commissionUnlockNotifyAt")) {
+        if (!data.lockExpiresAt) {
+          skippedMissingLockExpiresAt++;
+        } else {
+          update.commissionUnlockNotifyAt = data.lockExpiresAt;
+        }
+      }
+      if (!Object.prototype.hasOwnProperty.call(data, "commissionUnlockedNotifiedAt")) {
+        update.commissionUnlockedNotifiedAt = null;
+      }
+      if (!Object.keys(update).length) continue;
+      wouldUpdate++;
+      if (sampleIds.length < 25) sampleIds.push(doc.id);
+      if (dryRun) continue;
+      batch.set(doc.ref, update, { merge: true });
+      pendingWrites++;
+      updated++;
+      await flushBatch(false);
+    }
+    await flushBatch(true);
+
+    sendJson(req, res, 200, {
+      ok: true,
+      dryRun,
+      scanned,
+      wouldUpdate,
+      updated,
+      skippedMissingLockExpiresAt,
+      sampleIds,
+      processedBy: adminUser.uid,
+    });
+  } catch (error) {
+    logger.error("adminBackfillCommissionNotifyFields failed", error);
+    sendJson(req, res, error.status || 500, { message: error.message || "Unable to backfill commission notification fields." });
+  }
+});
+
 // Admin: Reset Agent Password
 exports.adminResetAgentPassword = onRequest({ region: "us-central1" }, async (req, res) => {
   setCorsHeaders(req, res);
@@ -5915,24 +5987,30 @@ exports.notifyAgentCommissionUnlocked = onSchedule({
   timeZone: "Asia/Kolkata",
   region: "us-central1",
 }, async () => {
-  const nowMs = Date.now();
+  const nowTs = new Date();
   const snap = await db.collection(REVENUE_EVENTS_COLLECTION)
     .where("eventType", "==", "agent_commission")
     .where("status", "==", "recorded")
+    .where("commissionUnlockNotifyAt", "<=", nowTs)
+    .where("commissionUnlockedNotifiedAt", "==", null)
+    .orderBy("commissionUnlockNotifyAt", "asc")
+    .limit(500)
     .get();
   const sends = [];
   for (const doc of snap.docs) {
     const event = doc.data() || {};
-    const lockExpiresMs = parseTimestampMs(event.lockExpiresAt);
-    if (!lockExpiresMs || lockExpiresMs > nowMs || event.commissionUnlockedNotifiedAt) continue;
     const agentId = String(event.agentId || "");
-    if (!agentId) continue;
+    if (!agentId) {
+      sends.push(doc.ref.set({ commissionUnlockedNotifiedAt: FieldValue.serverTimestamp() }, { merge: true }));
+      continue;
+    }
     sends.push(sendAgentNotification(agentId, "commissionUnlocked", {
       commission_amount: `₹${Math.round(Number(event.agentCommissionAmount || event.amount || 0)).toLocaleString("en-IN")}`,
     }));
     sends.push(doc.ref.set({ commissionUnlockedNotifiedAt: FieldValue.serverTimestamp() }, { merge: true }));
   }
   await Promise.all(sends);
+  logger.info("notifyAgentCommissionUnlocked completed", { batchSize: snap.size });
 });
 
 exports.notifyAgentWeeklyDigest = onSchedule({
