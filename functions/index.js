@@ -1794,6 +1794,20 @@ async function activateVerifiedPurchase(params) {
   }
 
   const orderRef = db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId);
+  const orderTypeSnap = await orderRef.get();
+  if (orderTypeSnap.exists && String(orderTypeSnap.data()?.purchaseType || "").trim().toLowerCase() === "matchmaker") {
+    return activateMatchmakerSubscriptionPurchase({
+      uid,
+      orderId,
+      paymentId,
+      signature,
+      skipSignature: params?.skipSignature,
+      gatewayPayment: params?.gatewayPayment,
+      source: params?.source || "payment_verification",
+      pendingActivationId: params?.pendingActivationId || "",
+      ipAddress: params?.ipAddress || "",
+    });
+  }
   const memberRef = db.collection(MEMBERS_COLLECTION).doc(uid);
   const paymentRef = db.collection(PAYMENTS_COLLECTION).doc(paymentId);
   const pendingRef = params?.pendingActivationId
@@ -6886,177 +6900,213 @@ exports.createMatchmakerSubscriptionOrder = onRequest({ region: "us-central1" },
   }
 });
 
+async function activateMatchmakerSubscriptionPurchase(params = {}) {
+  const uid = String(params.uid || "").trim();
+  const orderId = String(params.orderId || "").trim();
+  const paymentId = String(params.paymentId || "").trim();
+  const signature = String(params.signature || "").trim();
+  if (!uid || !orderId || !paymentId) throw matchmakerError(400, "Payment activation payload is incomplete.");
+  if (!isRazorpayConfigured()) throw matchmakerError(503, "Payment verification is not configured yet.");
+  if (!params.skipSignature) {
+    if (!signature) throw matchmakerError(400, "Payment verification details are incomplete.");
+    if (!verifyRazorpaySignature(orderId, paymentId, signature)) throw matchmakerError(400, "Payment verification failed.");
+  }
+
+  await ensureMatchmakerDefaults();
+  const [orderSnap, memberSnap, existingPaymentSnap] = await Promise.all([
+    db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get(),
+    db.collection(MEMBERS_COLLECTION).doc(uid).get(),
+    db.collection(PAYMENTS_COLLECTION).doc(paymentId).get(),
+  ]);
+  if (!orderSnap.exists) throw matchmakerError(404, "Payment order not found.");
+  if (!memberSnap.exists) throw matchmakerError(404, "Member profile not found.");
+  const orderData = orderSnap.data() || {};
+  const memberData = memberSnap.data() || {};
+  if (String(orderData.uid || "") !== uid) throw matchmakerError(403, "This payment order does not belong to your account.");
+  if (String(orderData.purchaseType || "").trim().toLowerCase() !== "matchmaker") throw matchmakerError(400, "This payment order is not for a matchmaker plan.");
+  if (existingPaymentSnap.exists || String(orderData.status || "").toLowerCase() === "paid") {
+    const activeSub = await readActiveMatchmakerSubscription(uid);
+    if (params.pendingActivationId) {
+      await db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(String(params.pendingActivationId)).set({
+        status: "completed",
+        completedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        lastRetrySource: String(params.source || "matchmaker_activation"),
+      }, { merge: true });
+    }
+    return {
+      ok: true,
+      alreadyProcessed: true,
+      purchaseType: "matchmaker",
+      subscriptionId: activeSub?.subscriptionId || "",
+      matchmakerUid: activeSub?.assignedMatchmakerUid || "",
+      matchmakerName: memberData.assignedMatchmakerName || "",
+      endDate: activeSub?.endDate || "",
+    };
+  }
+
+  const pricing = await readMatchmakerPricing();
+  const plan = String(orderData.plan || "").trim().toLowerCase();
+  const planConfig = pricing[plan];
+  if (!planConfig || planConfig.enabled === false) throw matchmakerError(400, "The selected matchmaker plan is no longer available.");
+  if (Math.round(Number(orderData.amountInr || 0)) !== Math.round(Number(planConfig.price || 0))) {
+    throw matchmakerError(409, "The payment amount no longer matches the plan.");
+  }
+  if (memberData.isPaid !== true) throw matchmakerError(403, "Only paid members can activate a matchmaker plan.");
+  const activeSub = await readActiveMatchmakerSubscription(uid);
+  if (activeSub && parseTimestampMs(activeSub.endDate) > Date.now()) throw matchmakerError(409, "An active matchmaker subscription already exists.");
+
+  const { matchmakerUid, matchmakerName, isSticky } = await assignMatchmakerToMember(uid, { memberData });
+  const subscriptionId = safeRevenueEventId("mmsub", paymentId || orderId || uid);
+  const now = new Date();
+  const durationDays = Math.round(Number(planConfig.durationDays || 30));
+  const endDate = Timestamp.fromDate(new Date(now.getTime() + (durationDays * 24 * 60 * 60 * 1000)));
+  const agentInfo = await resolveRevenueAgentForMember(memberData);
+  const revenueEvents = await buildMatchmakerRevenueEvents({
+    memberId: uid,
+    memberData,
+    orderData: {
+      amountInr: planConfig.price,
+      plan,
+      durationDays: planConfig.durationDays,
+      suggestionsPerWeek: planConfig.suggestionsPerWeek,
+    },
+    orderId,
+    paymentId,
+    agentInfo,
+    matchmakerUid,
+    subscriptionId,
+    createdBy: "system",
+    ipAddress: params.ipAddress || "",
+    notes: `Matchmaker subscription activated for ${memberData.name || uid}`,
+  });
+
+  const batch = db.batch();
+  batch.set(db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscriptionId), {
+    subscriptionId,
+    memberUid: uid,
+    plan,
+    price: Number(planConfig.price || 0),
+    durationDays: Number(planConfig.durationDays || 30),
+    suggestionsPerWeek: Number(planConfig.suggestionsPerWeek || 3),
+    startDate: FieldValue.serverTimestamp(),
+    endDate,
+    status: "active",
+    razorpayOrderId: orderId,
+    razorpayPaymentId: paymentId,
+    pausedAt: null,
+    pausedReason: "",
+    resumedAt: null,
+    cancelledAt: null,
+    cancelReason: "",
+    assignedMatchmakerUid: matchmakerUid,
+    assignedAt: FieldValue.serverTimestamp(),
+    reassignmentHistory: [],
+    suggestionsDelivered: 0,
+    isStickyAssignment: isSticky,
+    source: String(params.source || orderData.source || "dashboard_card").trim(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    version: 1,
+  }, { merge: true });
+  batch.set(db.collection(MEMBERS_COLLECTION).doc(uid), {
+    matchmakerActive: true,
+    matchmakerEndDate: endDate,
+    matchmakerSubscriptionId: subscriptionId,
+    assignedMatchmakerUid: matchmakerUid,
+    assignedMatchmakerName: matchmakerName || "Your Matchmaker",
+    matchmakerAssignedAt: FieldValue.serverTimestamp(),
+    isStickyMatchmaker: isSticky,
+    lastMatchmakerUid: matchmakerUid,
+    matchmakerPlan: plan,
+    paymentGateway: "razorpay",
+    paymentCurrency: "INR",
+    lastPaymentId: paymentId,
+    lastOrderId: orderId,
+    lastPaymentAt: nowIso(),
+    lastPaymentAmount: Number(planConfig.price || 0),
+    paymentStatus: "paid",
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  batch.set(db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId), {
+    status: "paid",
+    paymentId,
+    verifiedAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    recoverySource: String(params.source || "matchmaker_activation"),
+  }, { merge: true });
+  batch.set(db.collection(PAYMENTS_COLLECTION).doc(paymentId), {
+    uid,
+    paymentId,
+    orderId,
+    gateway: "razorpay",
+    signature,
+    purchaseType: "matchmaker",
+    plan,
+    amountInr: Number(planConfig.price || 0),
+    currency: "INR",
+    status: "paid",
+    gatewayStatus: String(params.gatewayPayment?.status || ""),
+    gatewayCapturedAt: params.gatewayPayment?.created_at ? Timestamp.fromMillis(Number(params.gatewayPayment.created_at) * 1000) : null,
+    createdAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.paymentEventId), revenueEvents.paymentEvent, { merge: true });
+  if (revenueEvents.commissionEvent) {
+    batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.commissionEventId), revenueEvents.commissionEvent, { merge: true });
+  }
+  if (params.pendingActivationId) {
+    batch.set(db.collection(PENDING_ACTIVATIONS_COLLECTION).doc(String(params.pendingActivationId)), {
+      status: "completed",
+      completedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      lastRetrySource: String(params.source || "matchmaker_activation"),
+    }, { merge: true });
+  }
+  await batch.commit();
+
+  await Promise.all([
+    logActivity({
+      memberUid: uid,
+      actor: { type: "system", uid: "system", name: "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_SUBSCRIBED,
+      details: { plan, price: Number(planConfig.price || 0), durationDays, isSticky },
+      relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
+    }),
+    logActivity({
+      memberUid: uid,
+      actor: { type: "system", uid: "system", name: "Parichayam" },
+      eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_ASSIGNED,
+      details: { matchmakerUid, matchmakerName, isSticky },
+      relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
+    }),
+  ]);
+
+  return {
+    ok: true,
+    purchaseType: "matchmaker",
+    subscriptionId,
+    endDate: endDate.toDate().toISOString(),
+    matchmakerUid,
+    matchmakerName,
+    isSticky,
+  };
+}
+
 exports.enrollMatchmakerSubscription = onRequest({ region: "us-central1" }, async (req, res) => {
   setCorsHeaders(req, res);
   if (req.method === "OPTIONS") { res.status(204).send(""); return; }
   if (req.method !== "POST") { sendJson(req, res, 405, { message: "Method not allowed." }); return; }
   try {
     const authUser = await verifyAuthenticatedUser(req);
-    if (!isRazorpayConfigured()) throw matchmakerError(503, "Payment verification is not configured yet.");
-    const orderId = String(req.body?.razorpay_order_id || req.body?.orderId || "").trim();
-    const paymentId = String(req.body?.razorpay_payment_id || req.body?.paymentId || "").trim();
-    const signature = String(req.body?.razorpay_signature || req.body?.signature || "").trim();
-    if (!orderId || !paymentId || !signature) throw matchmakerError(400, "Payment verification details are incomplete.");
-    if (!verifyRazorpaySignature(orderId, paymentId, signature)) throw matchmakerError(400, "Payment verification failed.");
-
-    await ensureMatchmakerDefaults();
-    const [orderSnap, memberSnap, existingPaymentSnap] = await Promise.all([
-      db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId).get(),
-      db.collection(MEMBERS_COLLECTION).doc(authUser.uid).get(),
-      db.collection(PAYMENTS_COLLECTION).doc(paymentId).get(),
-    ]);
-    if (!orderSnap.exists) throw matchmakerError(404, "Payment order not found.");
-    if (!memberSnap.exists) throw matchmakerError(404, "Member profile not found.");
-    if (existingPaymentSnap.exists || String(orderSnap.data()?.status || "").toLowerCase() === "paid") {
-      const activeSub = await readActiveMatchmakerSubscription(authUser.uid);
-      sendJson(req, res, 200, {
-        ok: true,
-        alreadyProcessed: true,
-        subscriptionId: activeSub?.subscriptionId || "",
-        matchmakerUid: activeSub?.assignedMatchmakerUid || "",
-        matchmakerName: memberSnap.data()?.assignedMatchmakerName || "",
-        endDate: activeSub?.endDate || "",
-      });
-      return;
-    }
-
-    const orderData = orderSnap.data() || {};
-    if (String(orderData.uid || "") !== String(authUser.uid || "")) throw matchmakerError(403, "This payment order does not belong to your account.");
-    if (String(orderData.purchaseType || "").trim().toLowerCase() !== "matchmaker") throw matchmakerError(400, "This payment order is not for a matchmaker plan.");
-    const pricing = await readMatchmakerPricing();
-    const plan = String(orderData.plan || "").trim().toLowerCase();
-    const planConfig = pricing[plan];
-    if (!planConfig || planConfig.enabled === false) throw matchmakerError(400, "The selected matchmaker plan is no longer available.");
-    if (Math.round(Number(orderData.amountInr || 0)) !== Math.round(Number(planConfig.price || 0))) {
-      throw matchmakerError(409, "The payment amount no longer matches the plan.");
-    }
-    const memberData = memberSnap.data() || {};
-    if (memberData.isPaid !== true) throw matchmakerError(403, "Only paid members can activate a matchmaker plan.");
-    const activeSub = await readActiveMatchmakerSubscription(authUser.uid);
-    if (activeSub && parseTimestampMs(activeSub.endDate) > Date.now()) throw matchmakerError(409, "An active matchmaker subscription already exists.");
-
-    const { matchmakerUid, matchmakerName, isSticky } = await assignMatchmakerToMember(authUser.uid, { memberData });
-    const subscriptionId = buildSubscriptionId();
-    const now = new Date();
-    const endDate = Timestamp.fromDate(new Date(now.getTime() + (Math.round(Number(planConfig.durationDays || 30)) * 24 * 60 * 60 * 1000)));
-    const agentInfo = await resolveRevenueAgentForMember(memberData);
-    const revenueEvents = await buildMatchmakerRevenueEvents({
-      memberId: authUser.uid,
-      memberData,
-      orderData: {
-        amountInr: planConfig.price,
-        plan,
-        durationDays: planConfig.durationDays,
-        suggestionsPerWeek: planConfig.suggestionsPerWeek,
-      },
-      orderId,
-      paymentId,
-      agentInfo,
-      matchmakerUid,
-      subscriptionId,
-      createdBy: "system",
-      ipAddress: extractClientIp(req),
-      notes: `Matchmaker subscription activated for ${memberData.name || authUser.uid}`,
-    });
-
-    const paymentDoc = {
+    const result = await activateMatchmakerSubscriptionPurchase({
       uid: authUser.uid,
-      paymentId,
-      orderId,
-      gateway: "razorpay",
-      signature,
-      purchaseType: "matchmaker",
-      plan,
-      amountInr: Number(planConfig.price || 0),
-      currency: "INR",
-      status: "paid",
-      createdAt: FieldValue.serverTimestamp(),
-    };
-
-    const batch = db.batch();
-    batch.set(db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscriptionId), {
-      subscriptionId,
-      memberUid: authUser.uid,
-      plan,
-      price: Number(planConfig.price || 0),
-      durationDays: Number(planConfig.durationDays || 30),
-      suggestionsPerWeek: Number(planConfig.suggestionsPerWeek || 3),
-      startDate: FieldValue.serverTimestamp(),
-      endDate,
-      status: "active",
-      razorpayOrderId: orderId,
-      razorpayPaymentId: paymentId,
-      pausedAt: null,
-      pausedReason: "",
-      resumedAt: null,
-      cancelledAt: null,
-      cancelReason: "",
-      assignedMatchmakerUid: matchmakerUid,
-      assignedAt: FieldValue.serverTimestamp(),
-      reassignmentHistory: [],
-      suggestionsDelivered: 0,
-      isStickyAssignment: isSticky,
-      source: String(req.body?.source || orderData.source || "dashboard_card").trim(),
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      version: 1,
+      orderId: req.body?.razorpay_order_id || req.body?.orderId,
+      paymentId: req.body?.razorpay_payment_id || req.body?.paymentId,
+      signature: req.body?.razorpay_signature || req.body?.signature,
+      source: req.body?.source || "dashboard_card",
+      ipAddress: extractClientIp(req),
     });
-    batch.set(db.collection(MEMBERS_COLLECTION).doc(authUser.uid), {
-      matchmakerActive: true,
-      matchmakerEndDate: endDate,
-      matchmakerSubscriptionId: subscriptionId,
-      assignedMatchmakerUid: matchmakerUid,
-      assignedMatchmakerName: matchmakerName || "Your Matchmaker",
-      matchmakerAssignedAt: FieldValue.serverTimestamp(),
-      isStickyMatchmaker: isSticky,
-      lastMatchmakerUid: matchmakerUid,
-      matchmakerPlan: plan,
-      paymentGateway: "razorpay",
-      paymentCurrency: "INR",
-      lastPaymentId: paymentId,
-      lastOrderId: orderId,
-      lastPaymentAt: nowIso(),
-      lastPaymentAmount: Number(planConfig.price || 0),
-      paymentStatus: "paid",
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    batch.set(db.collection(PAYMENT_ORDERS_COLLECTION).doc(orderId), {
-      status: "paid",
-      paymentId,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    batch.set(db.collection(PAYMENTS_COLLECTION).doc(paymentId), paymentDoc, { merge: true });
-    batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.paymentEventId), revenueEvents.paymentEvent, { merge: true });
-    if (revenueEvents.commissionEvent) {
-      batch.set(db.collection(REVENUE_EVENTS_COLLECTION).doc(revenueEvents.commissionEventId), revenueEvents.commissionEvent, { merge: true });
-    }
-    await batch.commit();
-
-    await Promise.all([
-      logActivity({
-        memberUid: authUser.uid,
-        actor: { type: "system", uid: "system", name: "Parichayam" },
-        eventType: ACTIVITY_EVENT_TYPES.MEMBER_MATCHMAKER_SUBSCRIBED,
-        details: { plan, price: Number(planConfig.price || 0), durationDays: Number(planConfig.durationDays || 30), isSticky },
-        relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
-      }),
-      logActivity({
-        memberUid: authUser.uid,
-        actor: { type: "system", uid: "system", name: "Parichayam" },
-        eventType: ACTIVITY_EVENT_TYPES.MATCHMAKER_ASSIGNED,
-        details: { matchmakerUid, matchmakerName, isSticky },
-        relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscriptionId }],
-      }),
-    ]);
-
-    sendJson(req, res, 200, {
-      ok: true,
-      subscriptionId,
-      endDate: endDate.toDate().toISOString(),
-      matchmakerUid,
-      matchmakerName,
-      isSticky,
-    });
+    sendJson(req, res, 200, result);
   } catch (error) {
     logger.error("enrollMatchmakerSubscription failed", error);
     sendJson(req, res, error.status || 500, { message: error.message || "Unable to activate matchmaker subscription." });
