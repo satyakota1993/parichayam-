@@ -6731,6 +6731,20 @@ function buildLeanMemberCard(member) {
   };
 }
 
+function sanitizeMatchmakerAssignmentForViewer(card, viewerUid, viewerRole) {
+  if (!card || typeof card !== "object") return card;
+  const sanitized = { ...card };
+  const normalizedRole = normalizeMemberRole(viewerRole);
+  const isAdminViewer = normalizedRole === "ADMIN";
+  const isAssignedToMe = String(sanitized.assignedMatchmakerUid || "").trim() === String(viewerUid || "").trim();
+  sanitized.isAssignedToMe = isAssignedToMe;
+  if (!isAdminViewer) {
+    sanitized.assignedMatchmakerUid = isAssignedToMe ? String(viewerUid || "").trim() : "";
+    sanitized.assignedMatchmakerName = isAssignedToMe ? String(sanitized.assignedMatchmakerName || "").trim() : "";
+  }
+  return sanitized;
+}
+
 async function enrichSuggestionForViewer(suggestion, viewerUid, viewerRole) {
   const data = suggestion || {};
   const [memberA, memberB] = await Promise.all([
@@ -7044,8 +7058,17 @@ exports.cancelMatchmakerSubscription = onRequest({ region: "us-central1" }, asyn
     const authUser = await verifyAuthenticatedUser(req);
     const subscription = await readActiveMatchmakerSubscription(authUser.uid);
     if (!subscription) throw matchmakerError(404, "No active matchmaker subscription found.");
+    if (subscription.cancelledAt) {
+      sendJson(req, res, 200, {
+        ok: true,
+        alreadyCancelled: true,
+        subscriptionId: subscription.subscriptionId,
+        activeUntil: subscription.endDate || "",
+        cancelsAtEnd: true,
+      });
+      return;
+    }
     await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION).doc(subscription.subscriptionId).set({
-      status: "cancelled",
       cancelledAt: FieldValue.serverTimestamp(),
       cancelReason: String(req.body?.reason || "Cancelled by member").trim().slice(0, 500),
       updatedAt: FieldValue.serverTimestamp(),
@@ -7057,7 +7080,12 @@ exports.cancelMatchmakerSubscription = onRequest({ region: "us-central1" }, asyn
       details: { subscriptionId: subscription.subscriptionId, reason: String(req.body?.reason || "Cancelled by member").trim().slice(0, 500) },
       relatedDocs: [{ collection: MATCHMAKER_SUBSCRIPTIONS_COLLECTION, id: subscription.subscriptionId }],
     });
-    sendJson(req, res, 200, { ok: true, subscriptionId: subscription.subscriptionId, activeUntil: subscription.endDate || "" });
+    sendJson(req, res, 200, {
+      ok: true,
+      subscriptionId: subscription.subscriptionId,
+      activeUntil: subscription.endDate || "",
+      cancelsAtEnd: true,
+    });
   } catch (error) {
     logger.error("cancelMatchmakerSubscription failed", error);
     sendJson(req, res, error.status || 500, { message: error.message || "Unable to cancel subscription." });
@@ -7092,7 +7120,10 @@ exports.getMatchmakerEnrollmentInfo = onRequest({ region: "us-central1" }, async
         matchmakerPlan: String(member.matchmakerPlan || "").trim(),
         matchmakerEndDate: member.matchmakerEndDate || "",
       },
-      subscription,
+      subscription: subscription ? {
+        ...subscription,
+        cancelsAtEnd: Boolean(subscription.cancelledAt),
+      } : null,
     });
   } catch (error) {
     logger.error("getMatchmakerEnrollmentInfo failed", error);
@@ -7115,9 +7146,8 @@ exports.searchMembersForMatchmaker = onRequest({ region: "us-central1" }, async 
     let results = await Promise.all(snap.docs.map(async (doc) => {
       const data = { uid: doc.id, ...(doc.data() || {}) };
       await ensureMemberNameLower(doc.id, data);
-      const card = buildLeanMemberCard(data);
+      const card = sanitizeMatchmakerAssignmentForViewer(buildLeanMemberCard(data), user.uid, user.member?.role);
       card.photoUrl = await getMemberPhotoUrlForViewer(user.uid, data);
-      card.isAssignedToMe = String(data.assignedMatchmakerUid || "") === String(user.uid || "");
       return { raw: data, card };
     }));
     results = results.filter(({ raw, card }) => {
@@ -7205,6 +7235,7 @@ exports.universalMemberSearch = onRequest({ region: "us-central1" }, async (req,
     }
     const sanitized = await Promise.all(results.map(async (r) => {
       await ensureMemberNameLower(r.uid, r);
+      const isAssignedToMe = String(r.assignedMatchmakerUid || "") === String(user.uid || "");
       return {
         uid: r.uid,
         profileNumber: r.profileNumber || "",
@@ -7216,8 +7247,8 @@ exports.universalMemberSearch = onRequest({ region: "us-central1" }, async (req,
         tier: r.tier || r.plan || "",
         isPaid: r.isPaid === true,
         photoUrl: await getMemberPhotoUrlForViewer(user.uid, r),
-        assignedMatchmakerUid: r.assignedMatchmakerUid || "",
-        isAssignedToMe: String(r.assignedMatchmakerUid || "") === String(user.uid || ""),
+        assignedMatchmakerUid: normalizeMemberRole(user.member?.role) === "ADMIN" ? (r.assignedMatchmakerUid || "") : (isAssignedToMe ? String(user.uid || "") : ""),
+        isAssignedToMe,
         matchType: r.type,
       };
     }));
@@ -7249,6 +7280,7 @@ exports.getMemberProfile360 = onRequest({ region: "us-central1" }, async (req, r
     const isMatchmakerUser = viewerRole === "MATCHMAKER";
     const isSelf = String(user.uid || "") === targetMemberUid;
     const isAssignedMatchmaker = isMatchmakerUser && String(target.assignedMatchmakerUid || "") === String(user.uid || "");
+    const canViewSensitiveProfile = isAdminUser || isSelf || isAssignedMatchmaker;
     if (!isAdminUser && !isMatchmakerUser && !isSelf) throw matchmakerError(403, "Not authorized to view this profile.");
     const profile = {
       uid: target.uid,
@@ -7257,8 +7289,8 @@ exports.getMemberProfile360 = onRequest({ region: "us-central1" }, async (req, r
       firstName: firstName(target.name || ""),
       age: computeAgeFromValue(target.dateOfBirth || target.dob),
       gender: target.gender || "",
-      phone: target.phone || "",
-      email: target.email || "",
+      phone: canViewSensitiveProfile ? (target.phone || "") : "",
+      email: canViewSensitiveProfile ? (target.email || "") : "",
       city: target.city || "",
       state: target.state || "",
       profession: target.profession || "",
@@ -7274,7 +7306,7 @@ exports.getMemberProfile360 = onRequest({ region: "us-central1" }, async (req, r
       status: target.status || "",
       verificationStatus: target.verificationStatus || {},
       photoUrl: await getMemberPhotoUrlForViewer(user.uid, target),
-      family: (isAdminUser || isMatchmakerUser || isSelf) ? {
+      family: canViewSensitiveProfile ? {
         fatherName: target.fatherName || "",
         motherName: target.motherName || "",
         siblings: target.siblings || "",
@@ -7282,10 +7314,12 @@ exports.getMemberProfile360 = onRequest({ region: "us-central1" }, async (req, r
       } : null,
       preferences: target.preferences || {},
       matchmaker: target.matchmakerActive ? {
-        uid: target.assignedMatchmakerUid || "",
-        name: target.assignedMatchmakerName || "",
-        endDate: target.matchmakerEndDate || "",
-        plan: target.matchmakerPlan || "",
+        active: true,
+        isAssignedToViewer: isAssignedMatchmaker,
+        uid: canViewSensitiveProfile ? (target.assignedMatchmakerUid || "") : "",
+        name: canViewSensitiveProfile ? (target.assignedMatchmakerName || "") : "",
+        endDate: canViewSensitiveProfile ? (target.matchmakerEndDate || "") : "",
+        plan: canViewSensitiveProfile ? (target.matchmakerPlan || "") : "",
       } : null,
     };
     const activitySnap = await db.collection(ACTIVITY_LOG_COLLECTION)
@@ -7577,7 +7611,7 @@ exports.createFamilyIntroduction = onRequest({ region: "us-central1" }, async (r
     const suggestionSnap = await db.collection(MATCH_SUGGESTIONS_COLLECTION).doc(suggestionId).get();
     if (!suggestionSnap.exists) throw matchmakerError(404, "Suggestion not found.");
     const suggestion = suggestionSnap.data() || {};
-    if (!isAdminMemberRole(user.member.role) && String(suggestion.forMemberAUid || "") !== String(req.body?.memberAUid || suggestion.forMemberAUid || "")) {
+    if (!isAdminMemberRole(user.member.role)) {
       await verifyAssignedMatchmaker(req, suggestion.forMemberAUid);
     }
     if (![SUGGESTION_STATUS_FLOW.MUTUAL_INTEREST, SUGGESTION_STATUS_FLOW.FAMILY_INTRODUCED, SUGGESTION_STATUS_FLOW.IN_DISCUSSION].includes(String(suggestion.status || ""))) {

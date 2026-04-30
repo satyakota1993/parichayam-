@@ -2026,7 +2026,12 @@ a{text-decoration:none;color:inherit;}
     <div class="view" id="view-matchmaker">
       <div class="sh">
         <div><div class="sec-lbl">Your Personal Guide</div><div class="sec-title">My <em>Matchmaker</em></div></div>
-        <div style="font-size:.72rem;color:var(--gn);font-weight:500">● Available Now</div>
+        <div style="font-size:.72rem;color:var(--g);font-weight:500">Preview mode</div>
+      </div>
+
+      <div class="mm-access-box" style="margin-bottom:1rem">
+        <div class="mm-access-title">Live matchmaker actions are being wired safely</div>
+        <div class="mm-access-sub">This section still contains sample content. We only enable real subscription, suggestion, and messaging actions here when your account has a live assigned matchmaker and the backend can accept the action.</div>
       </div>
 
       <!-- MATCHMAKER PROFILE CARD -->
@@ -2043,7 +2048,7 @@ a{text-decoration:none;color:inherit;}
           </div>
         </div>
         <div class="mm-contact">
-          <button class="btn-mm-wa" onclick="window.open('https://wa.me/919440176078?text=Namaste! I need matchmaker assistance for my profile on Parichayam','_blank')">💬 WhatsApp</button>
+          <button class="btn-mm-wa" onclick="document.getElementById('mmChatInp')?.focus()">💬 Open Chat</button>
           <div style="font-size:.62rem;color:var(--mu);text-align:center;margin-top:.3rem">Responds within 2 hrs</div>
         </div>
       </div>
@@ -2064,6 +2069,7 @@ a{text-decoration:none;color:inherit;}
       <!-- MATCHMAKER PACKAGES -->
       <div class="mm-services" style="margin-bottom:1.1rem">
         <div class="mm-svc-title">Matchmaker <em style="font-style:italic;color:var(--m)">Packages</em></div>
+        <div style="font-size:.64rem;color:var(--mu);margin-top:.2rem">Preview only. Live pricing and checkout will come from your account state, not these sample cards.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.65rem">
           <div style="background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:11px;padding:.9rem;text-align:center;position:relative;">
             <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin-bottom:.3rem">Included</div>
@@ -2080,7 +2086,7 @@ a{text-decoration:none;color:inherit;}
             <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gl);font-weight:700">₹999<span style="font-size:.7rem;font-weight:300;color:rgba(255,255,255,.5)">/3 mo</span></div>
             <div style="font-size:.62rem;color:rgba(255,255,255,.45);margin:.4rem 0 .65rem;line-height:1.5;">One-time payment · 3 months</div>
             <div style="font-size:.66rem;color:rgba(255,255,255,.8);text-align:left;line-height:1.7">✓ Everything in Basic<br>✓ Jathakam compatibility review<br>✓ 15 curated matches/month<br>✓ Priority WhatsApp response<br>✓ Gotra pre-screening included</div>
-            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="openModal('upgradeModal')">Upgrade to Silver →</button>
+            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="showMatchmakerActionNotice('Live matchmaker plan checkout will appear here once this dashboard is connected to your account pricing.')">Preview only</button>
           </div>
           <div style="background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:11px;padding:.9rem;text-align:center;">
             <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin-bottom:.3rem">Elite</div>
@@ -2088,7 +2094,7 @@ a{text-decoration:none;color:inherit;}
             <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--m);font-weight:700">₹1,999<span style="font-size:.7rem;font-weight:300;color:var(--mu)">/6 mo</span></div>
             <div style="font-size:.62rem;color:var(--mu);margin:.4rem 0 .65rem;line-height:1.5;">Premium service · 6 months</div>
             <div style="font-size:.66rem;color:var(--tx);text-align:left;line-height:1.7">✓ Everything in Silver<br>✓ Background verification<br>✓ Family introduction facilitation<br>✓ Muhurtham planning<br>✓ Dedicated matchmaker hotline</div>
-            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="openModal('upgradeModal')">Upgrade to Gold →</button>
+            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="showMatchmakerActionNotice('Live matchmaker plan checkout will appear here once this dashboard is connected to your account pricing.')">Preview only</button>
           </div>
         </div>
       </div>
@@ -2104,7 +2110,7 @@ a{text-decoration:none;color:inherit;}
               <div style="font-size:.62rem;color:var(--mu);margin:.1rem 0;font-weight:300">29 yrs · Software Engineer · Hyderabad · Rohini Nakshatra · 3rd Padam</div>
               <div style="font-size:.6rem;color:var(--g);font-weight:500">✦ Matchmaker note: Excellent family background. Jathakam reviewed — 28/36 compatibility.</div>
             </div>
-            <button class="btn-up" style="font-size:.68rem;flex-shrink:0" onclick="showToast('Express Interest sent to Karthik Reddy','success')">Express Interest</button>
+            <button class="btn-up" style="font-size:.68rem;flex-shrink:0" onclick="showMatchmakerActionNotice('Live response buttons only appear on real suggestions from your assigned matchmaker.')">Preview only</button>
           </div>
           <div style="display:flex;align-items:center;gap:.85rem;background:var(--wh);border:1px solid rgba(201,150,58,.15);border-radius:10px;padding:.75rem .9rem;cursor:pointer;transition:all .2s" onmouseover="this.style.boxShadow='0 6px 18px rgba(123,28,46,.08)'" onmouseout="this.style.boxShadow='none'">
             <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--d),var(--m));display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">👨‍💼</div>
@@ -2113,7 +2119,7 @@ a{text-decoration:none;color:inherit;}
               <div style="font-size:.62rem;color:var(--mu);margin:.1rem 0;font-weight:300">31 yrs · CA · Vijayawada · Hasta Nakshatra · 1st Padam</div>
               <div style="font-size:.6rem;color:var(--g);font-weight:500">✦ Matchmaker note: Well-settled family. Father is a respected businessman in Vijayawada.</div>
             </div>
-            <button class="btn-up" style="font-size:.68rem;flex-shrink:0" onclick="showToast('Express Interest sent to Venkat Prasad','success')">Express Interest</button>
+            <button class="btn-up" style="font-size:.68rem;flex-shrink:0" onclick="showMatchmakerActionNotice('Live response buttons only appear on real suggestions from your assigned matchmaker.')">Preview only</button>
           </div>
           <div style="display:flex;align-items:center;gap:.85rem;background:var(--wh);border:1px solid rgba(201,150,58,.15);border-radius:10px;padding:.75rem .9rem;cursor:pointer;transition:all .2s" onmouseover="this.style.boxShadow='0 6px 18px rgba(123,28,46,.08)'" onmouseout="this.style.boxShadow='none'">
             <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--d),var(--m));display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">🧑</div>
@@ -5317,25 +5323,56 @@ function initServicesAccess() {
 }
 
 // ── MATCHMAKER CHAT ──
-function sendMatchmakerRequest() {
-  const msg = document.getElementById('mm-access-msg').value.trim();
-  if (!msg) { showToast('Please describe your requirements first', 'error'); return; }
-  appendMMMessage(msg, 'out');
-  document.getElementById('mm-access-msg').value = '';
-  showToast('Request sent to your matchmaker via WhatsApp ✓', 'success');
-  setTimeout(() => {
-    appendMMMessage('Thank you for your request! I will review your requirements and update your search access within 2 hours. 🙏', 'in');
-  }, 2000);
+function showMatchmakerActionNotice(message) {
+  showToast(message || 'This matchmaker action is still in preview mode on this dashboard.', 'info');
 }
 
-function sendMMMessage() {
+function getCurrentMemberUid() {
+  const session = getMemberSession() || {};
+  return String(session.uid || session.memberUid || session.id || '').trim();
+}
+
+async function postMatchmakerMessage(text, sourceLabel) {
+  const cleanText = String(text || '').trim();
+  if (!cleanText) return false;
+  const memberUid = getCurrentMemberUid();
+  if (!memberUid) {
+    showToast('We could not confirm your member account for matchmaker messaging yet.', 'warning');
+    return false;
+  }
+  if (!window.ParichayamFirebase?.sendMatchmakerMessage) {
+    showToast('Live matchmaker messaging is not enabled in this build yet.', 'warning');
+    return false;
+  }
+  try {
+    await window.ParichayamFirebase.sendMatchmakerMessage({
+      memberUid,
+      text: cleanText,
+      source: sourceLabel || 'member_dashboard',
+    });
+    appendMMMessage(cleanText, 'out');
+    showToast('Message sent to your matchmaker.', 'success');
+    return true;
+  } catch (error) {
+    showToast(error?.message || 'Unable to send your message right now.', 'error');
+    return false;
+  }
+}
+
+async function sendMatchmakerRequest() {
+  const field = document.getElementById('mm-access-msg');
+  const msg = field?.value.trim() || '';
+  if (!msg) { showToast('Please describe your requirements first', 'error'); return; }
+  const sent = await postMatchmakerMessage(`Search access request: ${msg}`, 'matchmaker_access_request');
+  if (sent && field) field.value = '';
+}
+
+async function sendMMMessage() {
   const inp = document.getElementById('mmChatInp');
-  if (!inp || !inp.value.trim()) return;
-  appendMMMessage(inp.value.trim(), 'out');
-  inp.value = '';
-  setTimeout(() => {
-    appendMMMessage('Thank you for your message. I will respond shortly. 🙏', 'in');
-  }, 1500);
+  const msg = inp?.value.trim() || '';
+  if (!msg) return;
+  const sent = await postMatchmakerMessage(msg, 'matchmaker_chat');
+  if (sent && inp) inp.value = '';
 }
 
 function appendMMMessage(text, dir) {
