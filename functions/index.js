@@ -6794,11 +6794,24 @@ async function loadSuggestionsCreatedBy(matchmakerUid, limitValue) {
 }
 
 async function readActiveMatchmakerSubscription(memberUid) {
+  const now = new Date();
   const snap = await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
     .where("memberUid", "==", String(memberUid || "").trim())
     .where("status", "==", "active")
+    .where("endDate", ">", now)
+    .orderBy("endDate", "desc")
     .limit(5)
-    .get();
+    .get()
+    .catch(async () => {
+      const fallbackSnap = await db.collection(MATCHMAKER_SUBSCRIPTIONS_COLLECTION)
+        .where("memberUid", "==", String(memberUid || "").trim())
+        .where("status", "==", "active")
+        .limit(10)
+        .get();
+      return {
+        docs: fallbackSnap.docs.filter((doc) => parseTimestampMs(doc.data()?.endDate) > now.getTime()),
+      };
+    });
   const items = snap.docs.map((doc) => ({ subscriptionId: doc.id, ...(doc.data() || {}) }))
     .sort((left, right) => parseTimestampMs(right.endDate) - parseTimestampMs(left.endDate));
   return items[0] || null;
@@ -8185,12 +8198,14 @@ exports.expireMatchmakerSubscriptions = onSchedule({
     const sub = doc.data() || {};
     writes.push(doc.ref.set({
       status: "expired",
+      expiredAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true }));
     writes.push(db.collection(MEMBERS_COLLECTION).doc(String(sub.memberUid || "")).set({
       matchmakerActive: false,
       matchmakerSubscriptionId: "",
       matchmakerPlan: "",
+      matchmakerEndDate: "",
       assignedMatchmakerUid: "",
       assignedMatchmakerName: "",
       updatedAt: FieldValue.serverTimestamp(),
