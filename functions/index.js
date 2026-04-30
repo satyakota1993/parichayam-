@@ -8007,6 +8007,7 @@ exports.getMatchmakerStats = onRequest({ region: "us-central1" }, async (req, re
       ok: true,
       scope,
       activeSubscriptions: activeSubs.length,
+      cancelledSubscriptions: subscriptions.filter((item) => item.cancelledAt && String(item.status || "").toLowerCase() === "active").length,
       expiredSubscriptions: subscriptions.filter((item) => String(item.status || "").toLowerCase() === "expired").length,
       suggestionsCreated: suggestionRows.length,
       statusBreakdown: byStatus,
@@ -8014,6 +8015,20 @@ exports.getMatchmakerStats = onRequest({ region: "us-central1" }, async (req, re
       engaged: byStatus[SUGGESTION_STATUS_FLOW.ENGAGED] || 0,
       closed: byStatus[SUGGESTION_STATUS_FLOW.CLOSED] || 0,
       myMembers: scope === "global" ? undefined : activeSubs.length,
+      subscriptions: subscriptions
+        .sort((left, right) => parseTimestampMs(right.updatedAt || right.createdAt || right.endDate) - parseTimestampMs(left.updatedAt || left.createdAt || left.endDate))
+        .slice(0, 100)
+        .map((item) => ({
+          id: item.id || item.subscriptionId || "",
+          subscriptionId: item.subscriptionId || item.id || "",
+          memberUid: item.memberUid || "",
+          assignedMatchmakerUid: item.assignedMatchmakerUid || "",
+          plan: item.plan || "",
+          status: item.status || "",
+          price: Number(item.price || 0),
+          endDate: item.endDate || "",
+          cancelledAt: item.cancelledAt || null,
+        })),
     });
   } catch (error) {
     logger.error("getMatchmakerStats failed", error);
