@@ -15,6 +15,11 @@ service cloud.firestore {
         get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role == 'ADMIN';
     }
 
+    function isAgent() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/agents/$(request.auth.uid));
+    }
+
     function currentMemberRole() {
       return signedIn() &&
         exists(/databases/$(database)/documents/members/$(request.auth.uid))
@@ -26,6 +31,18 @@ service cloud.firestore {
       return signedIn() &&
         exists(/databases/$(database)/documents/members/$(request.auth.uid)) &&
         currentMemberRole() in ['ADMIN', 'MATCHMAKER', 'EMPLOYEE'];
+    }
+
+    function isMatchmaker() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/members/$(request.auth.uid)) &&
+        currentMemberRole() in ['ADMIN', 'MATCHMAKER'];
+    }
+
+    function isAssignedMatchmaker(memberUid) {
+      return isMatchmaker() &&
+        exists(/databases/$(database)/documents/members/$(memberUid)) &&
+        get(/databases/$(database)/documents/members/$(memberUid)).data.assignedMatchmakerUid == request.auth.uid;
     }
 
     function isAnonymousPublicStateKey(key) {
@@ -49,11 +66,47 @@ service cloud.firestore {
         'parichayam_connect_packs',
         'parichayam_connect_costs',
         'parichayam_agent_directory',
+        'parichayam_agent_tiers',
+        'parichayam_agent_commission_settings',
+        'parichayam_leaderboard_settings',
+        'parichayam_whatsapp_notification_settings',
+        'parichayam_matchmaker_pricing',
+        'parichayam_matchmaker_settings',
+        'parichayam_matchmaker_proof',
+        'parichayam_matchmaker_prompts',
         'parichayam_gotras',
         'parichayam_ads',
         'parichayam_dash_vis',
         'parichayam_communities'
       ];
+    }
+
+    function isValidComplaintCreate() {
+      return request.resource.data.keys().hasOnly([
+          'name',
+          'email',
+          'phone',
+          'category',
+          'message',
+          'status',
+          'source',
+          'createdAt'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() >= 5 &&
+        request.resource.data.email.size() <= 180 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() >= 10 &&
+        request.resource.data.phone.size() <= 20 &&
+        request.resource.data.category in ['general', 'refund', 'grievance', 'technical'] &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() >= 10 &&
+        request.resource.data.message.size() <= 2000 &&
+        request.resource.data.status == 'new' &&
+        request.resource.data.source == 'contact_page';
     }
 
     function memberProtectedFieldsForCreate() {
@@ -72,6 +125,8 @@ service cloud.firestore {
         'connectsMax',
         'planName',
         'lastPaymentId',
+        'lastOrderId',
+        'pendingPaymentOrderId',
         'lastPaymentAt',
         'lastPaymentAmount',
         'paymentGateway',
@@ -115,6 +170,8 @@ service cloud.firestore {
         'connectsMax',
         'planName',
         'lastPaymentId',
+        'lastOrderId',
+        'pendingPaymentOrderId',
         'lastPaymentAt',
         'lastPaymentAmount',
         'paymentGateway',
@@ -132,6 +189,14 @@ service cloud.firestore {
         // Staff/admin workflow assignment & control fields (normal members must not mutate).
         'assignedMatchmakerUid',
         'assignedMatchmakerName',
+        'matchmakerActive',
+        'matchmakerEndDate',
+        'matchmakerSubscriptionId',
+        'matchmakerAssignedAt',
+        'isStickyMatchmaker',
+        'lastMatchmakerUid',
+        'matchmakerPlan',
+        'engagementStatus',
         'assignedVerificationStaffUid',
         'assignedVerificationStaffName',
         'updatedByStaffUid',
@@ -299,10 +364,142 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    match /complaints/{complaintId} {
+      // Public contact form rate limiting is enforced by the submitContactForm Cloud Function.
+      allow create: if isValidComplaintCreate();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /pendingActivations/{paymentId} {
+      allow read: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /adminAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /paymentReconciliationRuns/{runId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /reconciliationReports/{reportId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /agentPayoutRequests/{requestId} {
       allow read: if isAdmin() ||
         (signedIn() && resource.data.agentId == request.auth.uid);
       allow create, update, delete: if false;
+    }
+
+    match /whatsappTemplates/{templateId} {
+      allow read: if isAdmin() || isAgent();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /marketingMaterials/{materialId} {
+      allow read: if isAdmin() || isAgent();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /festivals/{festivalId} {
+      allow read: if isAdmin() || isAgent();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /matchSuggestions/{id} {
+      allow read: if isAdmin() || (
+        signedIn() && (
+          resource.data.forMemberAUid == request.auth.uid ||
+          resource.data.forMemberBUid == request.auth.uid ||
+          resource.data.createdBy == request.auth.uid ||
+          isMatchmaker()
+        )
+      );
+      allow create: if isMatchmaker() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow update: if isAdmin() || (
+        isMatchmaker() && resource.data.createdBy == request.auth.uid
+      ) || (
+        signedIn() &&
+        resource.data.forMemberAUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberAAction', 'memberAActionAt', 'memberAViewedAt', 'memberADeclineReason', 'status', 'mutualInterestAt', 'closedAt', 'closeReason', 'updatedAt'])
+      ) || (
+        signedIn() &&
+        resource.data.forMemberBUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberBAction', 'memberBActionAt', 'memberBViewedAt', 'memberBDeclineReason', 'status', 'mutualInterestAt', 'closedAt', 'closeReason', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /familyIntroductions/{id} {
+      allow read: if isAdmin() || isMatchmaker() ||
+        (signedIn() && (resource.data.memberAUid == request.auth.uid || resource.data.memberBUid == request.auth.uid));
+      allow create: if isMatchmaker() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAdmin() || (isMatchmaker() && resource.data.createdBy == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /matchmakerSubscriptions/{id} {
+      allow read: if isAdmin() || isMatchmaker() ||
+        (signedIn() && resource.data.memberUid == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /matchmakerNotes/{id} {
+      allow read: if isAdmin() ||
+        (isMatchmaker() && resource.data.authorUid == request.auth.uid);
+      allow create: if isMatchmaker() && request.resource.data.authorUid == request.auth.uid;
+      allow update: if isAdmin() || (isMatchmaker() && resource.data.authorUid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /matchmakerMessages/{id} {
+      allow read: if isAdmin() ||
+        (signedIn() && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid));
+      allow create: if signedIn() && request.resource.data.fromUid == request.auth.uid;
+      allow update: if isAdmin() || (
+        signedIn() && resource.data.toUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /activityLog/{id} {
+      allow read: if isAdmin() || (
+        signedIn() && resource.data.memberUid == request.auth.uid && resource.data.visibility.member == true
+      ) || (
+        isAssignedMatchmaker(resource.data.memberUid) && resource.data.visibility.matchmaker == true
+      );
+      allow create, update, delete: if false;
+    }
+
+    match /analyticsEvents/{id} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /notificationLog/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /revenueEvents/{eventId} {
+      allow read: if signedIn() &&
+        (resource.data.memberId == request.auth.uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['recorded', 'settled', 'disputed'];
+      allow delete: if false;
     }
 
     match /verificationRequests/{requestId} {

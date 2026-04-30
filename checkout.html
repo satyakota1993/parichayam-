@@ -6,6 +6,7 @@
 <title>Checkout - Parichayam</title>
 <meta name="robots" content="noindex,nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="parichayam-site-common.css">
 <style>
 :root{
   --maroon:#7b1c2e;
@@ -809,7 +810,7 @@ body{
 const DEFAULT_SITE_SETTINGS = {
   businessName: 'Parichayam',
   supportPhone: '+91 94401 76078',
-  supportEmail: 'hello@parichayam.co.in',
+  supportEmail: 'support@parichayam.co.in',
   upiId: 'parichayam@upi',
   officeLocation: 'Vijayawada, AP',
 };
@@ -1867,6 +1868,25 @@ async function startTrustedRazorpayPayment() {
             razorpay_signature: response.razorpay_signature,
             planName: PLANS[selectedPlanKey]?.name || selectedPlanKey,
           });
+          if (verifyResult?.pendingActivation) {
+            persistPaymentRecord('activation_pending', {
+              gatewayOrderId: response.razorpay_order_id,
+              gatewayPaymentId: response.razorpay_payment_id,
+              gatewaySignature: response.razorpay_signature,
+              verification: verifyResult,
+            });
+            showConfirmation({
+              icon: 'WAIT',
+              title: 'Payment Received',
+              message:
+                '<strong>' + item.name + '</strong><br>' +
+                '<span style="font-size:.76rem;color:var(--gold);">Activation is queued for automatic recovery. You can check status from Dashboard > Settings.</span>',
+              linkHref: 'dashboard.html',
+              linkText: 'Go to Dashboard →',
+            });
+            toast('Payment received. Activation is queued for recovery.', 'warning');
+            return;
+          }
           const record = persistPaymentRecord('paid', {
             gatewayOrderId: response.razorpay_order_id,
             gatewayPaymentId: response.razorpay_payment_id,
@@ -2130,5 +2150,6 @@ async function initCheckout() {
 
 initCheckout();
 </script>
+<script src="parichayam-site-common.js"></script>
 </body>
 </html>

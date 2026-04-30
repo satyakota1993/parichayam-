@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parichayam Matchmaker Portal</title>
+  <link rel="stylesheet" href="parichayam-site-common.css">
   <style>
     :root{
       --bg:#f7efe2;
@@ -133,6 +134,22 @@
 
     <section class="layout">
       <div class="stack">
+        <div class="card" id="leanMatchmakerSearchCard">
+          <div class="section-title">
+            <div>
+              <h3>Member Search & 360</h3>
+              <p>Search all paid members. Actions are available only for members assigned to you.</p>
+            </div>
+          </div>
+          <div class="form-inline" style="grid-template-columns:1fr auto auto">
+            <input class="field" id="leanMemberSearchInput" placeholder="P-number, phone, email, or name">
+            <button class="mini-btn primary" onclick="runLeanMemberSearch()">Search</button>
+            <button class="mini-btn" onclick="loadLeanDiscover()">Discover</button>
+          </div>
+          <div id="leanMemberSearchResults" class="stack" style="margin-top:12px"></div>
+          <div id="leanMemberProfile360" style="margin-top:12px"></div>
+        </div>
+
         <div class="card">
           <div class="section-title">
             <div>
@@ -335,6 +352,159 @@
       ].join('');
     }
 
+    function isLeanMatchmakerRole() {
+      return ['ADMIN', 'MATCHMAKER'].includes(currentRole());
+    }
+
+    function parseLeanTimestamp(value) {
+      if (!value) return 0;
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') {
+        const parsed = Date.parse(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      if (typeof value === 'object') {
+        const seconds = value.seconds ?? value._seconds;
+        if (Number.isFinite(Number(seconds))) return Number(seconds) * 1000;
+      }
+      return 0;
+    }
+
+    function leanMemberLine(member) {
+      return [member.profileNumber, member.age ? `${member.age} yrs` : '', member.city, member.tier]
+        .filter(Boolean)
+        .join(' · ');
+    }
+
+    function renderLeanMemberResults(results) {
+      const wrap = document.getElementById('leanMemberSearchResults');
+      if (!wrap) return;
+      if (!isLeanMatchmakerRole()) {
+        wrap.innerHTML = '<div class="list-empty">Member search is available to admins and matchmakers only.</div>';
+        return;
+      }
+      if (!results.length) {
+        wrap.innerHTML = '<div class="list-empty">No members found. Try a P-number, phone, email, or name.</div>';
+        return;
+      }
+      wrap.innerHTML = results.map((member) => {
+        const mine = member.isAssignedToMe === true;
+        return `
+          <div class="case-card">
+            <div class="case-head">
+              <div style="display:flex;gap:12px;align-items:center">
+                <img src="${escapeHtml(member.photoUrl || '')}" alt="" style="width:48px;height:48px;border-radius:14px;object-fit:cover;background:#fff;border:1px solid var(--line)" onerror="this.style.display='none'">
+                <div>
+                  <p class="case-name">${escapeHtml(member.name || member.firstName || 'Member')}</p>
+                  <div class="subtle">${escapeHtml(leanMemberLine(member))}</div>
+                </div>
+              </div>
+              ${mine ? '<span class="pill pill-green">Mine</span>' : '<span class="pill pill-gold">Search only</span>'}
+            </div>
+            <div class="actions">
+              <button class="mini-btn primary" onclick="openLeanMember360('${escapeHtml(member.uid)}')">Open 360</button>
+              <button class="mini-btn blue" ${mine ? '' : 'disabled style="opacity:.55;cursor:not-allowed"'} onclick="sendLeanMemberMessage('${escapeHtml(member.uid)}')">Message</button>
+              <button class="mini-btn" ${mine ? '' : 'disabled style="opacity:.55;cursor:not-allowed"'} onclick="openLeanMember360('${escapeHtml(member.uid)}')">Family Intro</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadLeanDiscover() {
+      if (!isLeanMatchmakerRole()) return;
+      try {
+        const payload = await window.ParichayamFirebase.searchMembersForMatchmaker({ limit: 24 });
+        renderLeanMemberResults(payload.results || []);
+      } catch (error) {
+        toast(error?.message || 'Unable to load members.', 'error');
+      }
+    }
+
+    async function runLeanMemberSearch() {
+      if (!isLeanMatchmakerRole()) return;
+      const query = document.getElementById('leanMemberSearchInput')?.value.trim() || '';
+      try {
+        const payload = query.length >= 2
+          ? await window.ParichayamFirebase.universalMemberSearch({ query })
+          : await window.ParichayamFirebase.searchMembersForMatchmaker({ limit: 24 });
+        renderLeanMemberResults(payload.results || []);
+      } catch (error) {
+        toast(error?.message || 'Search failed.', 'error');
+      }
+    }
+
+    function renderLeanProfile360(payload) {
+      const wrap = document.getElementById('leanMemberProfile360');
+      if (!wrap) return;
+      const profile = payload.profile || {};
+      const assigned = payload.isAssignedMatchmaker === true || currentRole() === 'ADMIN';
+      const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions.slice(0, 6) : [];
+      const activity = Array.isArray(payload.activity) ? payload.activity.slice(0, 6) : [];
+      wrap.innerHTML = `
+        <div class="case-card">
+          <div class="case-head">
+            <div style="display:flex;gap:12px;align-items:center">
+              <img src="${escapeHtml(profile.photoUrl || '')}" alt="" style="width:72px;height:72px;border-radius:18px;object-fit:cover;background:#fff;border:1px solid var(--line)" onerror="this.style.display='none'">
+              <div>
+                <p class="case-name">${escapeHtml(profile.name || profile.firstName || 'Member')}</p>
+                <div class="subtle">${escapeHtml([profile.profileNumber, profile.age ? `${profile.age} yrs` : '', profile.city, profile.education, profile.profession].filter(Boolean).join(' · '))}</div>
+                <div class="subtle">${assigned ? escapeHtml([profile.phone, profile.email].filter(Boolean).join(' · ') || 'No contact details') : 'Contact details hidden until assigned.'}</div>
+              </div>
+            </div>
+            ${assigned ? '<span class="pill pill-green">Assigned access</span>' : '<span class="pill pill-gold">Search visibility</span>'}
+          </div>
+          <div class="actions">
+            <button class="mini-btn blue" ${assigned ? '' : 'disabled style="opacity:.55;cursor:not-allowed"'} onclick="sendLeanMemberMessage('${escapeHtml(profile.uid)}')">Send Message</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+            <div>
+              <h3 style="margin:.2rem 0 .5rem;font-size:1rem">Suggestions</h3>
+              ${suggestions.length ? suggestions.map((item) => {
+                const status = String(item.status || '').toLowerCase();
+                const canIntro = assigned && ['mutual_interest', 'family_introduced', 'in_discussion'].includes(status);
+                return `<div class="feed-item"><strong>${escapeHtml(status || 'suggestion')}</strong><span>${escapeHtml(item.matchmakerNote || 'No note')}</span><div class="actions"><button class="mini-btn green" ${canIntro ? '' : 'disabled style="opacity:.55;cursor:not-allowed"'} onclick="createLeanFamilyIntroduction('${escapeHtml(item.suggestionId)}')">Create Family Intro</button></div></div>`;
+              }).join('') : '<div class="list-empty">No suggestions returned for this member.</div>'}
+            </div>
+            <div>
+              <h3 style="margin:.2rem 0 .5rem;font-size:1rem">Activity</h3>
+              ${activity.length ? activity.map((item) => `<div class="feed-item"><strong>${escapeHtml(item.eventType || 'activity')}</strong><span>${escapeHtml(item.actor?.name || item.actor?.type || 'System')} · ${escapeHtml(formatDateTime(parseLeanTimestamp(item.createdAt)))}</span></div>`).join('') : '<div class="list-empty">No visible activity yet.</div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function openLeanMember360(uid) {
+      try {
+        const payload = await window.ParichayamFirebase.getMemberProfile360({ memberUid: uid });
+        renderLeanProfile360(payload || {});
+      } catch (error) {
+        toast(error?.message || 'Unable to open Member 360.', 'error');
+      }
+    }
+
+    async function sendLeanMemberMessage(uid) {
+      const text = prompt('Message to this assigned member:');
+      if (!text || !text.trim()) return;
+      try {
+        await window.ParichayamFirebase.sendMatchmakerMessage({ memberUid: uid, text: text.trim(), source: 'matchmaker_workboard' });
+        toast('Message sent.', 'success');
+      } catch (error) {
+        toast(error?.message || 'Unable to send message.', 'error');
+      }
+    }
+
+    async function createLeanFamilyIntroduction(suggestionId) {
+      if (!suggestionId) return;
+      try {
+        await window.ParichayamFirebase.createFamilyIntroduction({ matchSuggestionId: suggestionId });
+        toast('Family introduction created.', 'success');
+      } catch (error) {
+        toast(error?.message || 'Unable to create family introduction.', 'error');
+      }
+    }
+
     function showGate(message) {
       document.getElementById('portalShell').style.display = 'none';
       document.getElementById('gateWrap').style.display = 'grid';
@@ -364,6 +534,8 @@
       document.getElementById('metricVerify').textContent = String(verifications.length);
       document.getElementById('metricEarned').textContent = formatCurrency(earned);
       document.getElementById('portalMeta').textContent = `${roleLabel(portalState.member?.role || 'staff')} workspace`;
+      const leanSearchCard = document.getElementById('leanMatchmakerSearchCard');
+      if (leanSearchCard) leanSearchCard.style.display = isLeanMatchmakerRole() ? '' : 'none';
       document.getElementById('heroTitle').textContent = isEmployeeRole()
         ? 'Verification and operations desk for active member cases.'
         : 'Client operations for every active lead.';
@@ -655,12 +827,19 @@
         portalState.member = member;
         showPortal();
         await refreshMatchmakerPortal();
+        await loadLeanDiscover().catch(() => null);
       } catch (error) {
         showGate(error?.message || 'Please sign in to open the matchmaker workspace.');
       }
     }
 
-    document.addEventListener('DOMContentLoaded', startPortal);
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('leanMemberSearchInput')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') runLeanMemberSearch();
+      });
+      startPortal();
+    });
   </script>
+  <script src="parichayam-site-common.js"></script>
 </body>
 </html>

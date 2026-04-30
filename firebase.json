@@ -8,6 +8,11 @@
       "firestore.rules",
       "firestore.indexes.json",
       "storage.rules",
+      "functions/**",
+      "scripts/**",
+      "docs/**",
+      "**/*.patch",
+      "**/*.log",
       "**/.*",
       "**/node_modules/**"
     ],
@@ -29,8 +34,28 @@
         "type": 301
       },
       {
+        "source": "/about.html",
+        "destination": "/about",
+        "type": 301
+      },
+      {
+        "source": "/pricing.html",
+        "destination": "/pricing",
+        "type": 301
+      },
+      {
+        "source": "/refund.html",
+        "destination": "/refund",
+        "type": 301
+      },
+      {
         "source": "/refund-policy.html",
-        "destination": "/refund-policy",
+        "destination": "/refund",
+        "type": 301
+      },
+      {
+        "source": "/refund-policy",
+        "destination": "/refund",
         "type": 301
       },
       {
@@ -40,6 +65,13 @@
       }
     ],
     "rewrites": [
+      {
+        "source": "/webhook/razorpay",
+        "function": {
+          "functionId": "razorpayWebhook",
+          "region": "us-central1"
+        }
+      },
       {
         "source": "/terms",
         "destination": "/terms.html"
@@ -53,8 +85,20 @@
         "destination": "/contact.html"
       },
       {
+        "source": "/about",
+        "destination": "/about.html"
+      },
+      {
+        "source": "/pricing",
+        "destination": "/pricing.html"
+      },
+      {
+        "source": "/refund",
+        "destination": "/refund.html"
+      },
+      {
         "source": "/refund-policy",
-        "destination": "/refund-policy.html"
+        "destination": "/refund.html"
       },
       {
         "source": "/shipping-policy",
@@ -83,5 +127,20 @@
   },
   "storage": {
     "rules": "storage.rules"
+  },
+  "emulators": {
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8085
+    },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "singleProjectMode": true
   }
 }

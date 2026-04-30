@@ -6,6 +6,7 @@
 <title>Parichayam — Super Admin Panel</title>
 <meta name="robots" content="noindex,nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="parichayam-site-common.css">
 <style>
 :root{--m:#7B1C2E;--d:#4A0E1A;--d2:#1A0A04;--g:#C9963A;--gl:#E8C06A;--gp:#2A1A08;--bg:#0F0A00;--card:#1C1200;--card2:#221800;--bdr:rgba(201,150,58,.18);--bdr2:rgba(201,150,58,.32);--tx:#F5E6C0;--mu:rgba(245,230,192,.5);--wh:#FFFDF9;--gn:#22c55e;--gn2:rgba(34,197,94,.12);--rd:#ef4444;--rd2:rgba(239,68,68,.12);--bl:#3b82f6;--bl2:rgba(59,130,246,.12);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -238,6 +239,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="ni" onclick="nav('addons',this)"><span class="ni-i">⚡</span><span class="ni-l">Add-Ons</span></div>
     <div class="ni" onclick="nav('ads',this)"><span class="ni-i">📢</span><span class="ni-l">Advertisements</span><span class="nb nb-o">3</span></div>
     <div class="ni" onclick="nav('agents',this)"><span class="ni-i">🤝</span><span class="ni-l">Agents & Franchise</span><span class="nb nb-r" id="agent-nav-badge" style="display:none">0</span></div>
+    <div class="ni" onclick="nav('agentsettings',this)"><span class="ni-i">⚙</span><span class="ni-l">Agent Settings</span></div>
+    <div class="ni" onclick="nav('alerts',this)"><span class="ni-i">⚠</span><span class="ni-l">Payment Alerts</span></div>
+    <div class="ni" onclick="nav('refunds',this)"><span class="ni-i">↩</span><span class="ni-l">Refunds</span></div>
+    <div class="ni" onclick="nav('reconciliation',this)"><span class="ni-i">↻</span><span class="ni-l">Reconciliation</span></div>
     <div class="ng">Features</div>
     <div class="ni" onclick="nav('dashbuilder',this)"><span class="ni-i">🎛️</span><span class="ni-l">Dashboard Builder</span></div>
     <div class="ni" onclick="nav('formbuilder',this)"><span class="ni-i">📝</span><span class="ni-l">Profile Form Builder</span></div>
@@ -253,6 +258,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <div class="ni" onclick="nav('partners',this)"><span class="ni-i">🙏</span><span class="ni-l">Service Partners</span></div>
     <div class="ni" onclick="nav('content',this)"><span class="ni-i">🌐</span><span class="ni-l">Website Content</span></div>
     <div class="ni" onclick="nav('staff',this)"><span class="ni-i">👥</span><span class="ni-l">Staff Access</span></div>
+    <div class="ni" onclick="nav('matchmakerops',this)"><span class="ni-i">💼</span><span class="ni-l">Matchmaker Ops</span></div>
     <div class="ni" onclick="nav('reports',this)"><span class="ni-i">📈</span><span class="ni-l">Reports</span></div>
     <div class="nav-empty" id="admin-nav-empty">No matching admin section. Try a broader keyword like <strong style="color:var(--gl)">payment</strong>, <strong style="color:var(--gl)">verify</strong>, or <strong style="color:var(--gl)">content</strong>.</div>
   </nav>
@@ -842,6 +848,56 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
         </div>
         <div id="gotra-activation-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
         <div style="margin-top:.85rem;font-size:.72rem;color:var(--mu)">💡 After activation, update the member's account from <strong style="color:var(--tx)">User Access Control</strong> to grant the gotraBlock addon flag.</div>
+      </div>
+    </div>
+
+    <!-- PAYMENT RESILIENCE -->
+    <div class="view" id="view-alerts">
+      <div class="card">
+        <div class="card-title">Payment Alerts</div>
+        <div style="background:rgba(201,150,58,.06);border:1px solid var(--bdr);border-radius:8px;padding:.75rem 1rem;font-size:.72rem;color:var(--mu);margin-bottom:1rem;line-height:1.65">
+          Monitor captured payments that need activation recovery. Retry pending activations before contacting the member.
+        </div>
+        <div id="payment-alert-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin-bottom:1rem"></div>
+        <div id="payment-alert-list" style="display:flex;flex-direction:column;gap:.65rem"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-refunds">
+      <div class="card">
+        <div class="card-title">Manual Refunds</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin-bottom:1rem">
+          <div><div class="f-lbl">Member UID</div><input class="f-inp" id="refund-member-id" placeholder="members/{uid}"></div>
+          <div><div class="f-lbl">Razorpay Order ID</div><input class="f-inp" id="refund-order-id" placeholder="order_xxx"></div>
+          <div><div class="f-lbl">Amount (optional)</div><input class="f-inp" id="refund-amount" type="number" min="1" placeholder="Full refund if blank"></div>
+          <div><div class="f-lbl">Reason</div><select class="f-inp" id="refund-reason"><option value="user_requested">User requested</option><option value="admin_cancel">Admin cancel</option><option value="payment_failed">Payment failed</option><option value="fraud_suspected">Fraud suspected</option></select></div>
+        </div>
+        <div><div class="f-lbl">Admin Notes</div><textarea class="f-inp" id="refund-notes" rows="3" placeholder="Reasoning visible in revenueEvents metadata"></textarea></div>
+        <button class="btn-primary" style="margin-top:.85rem" onclick="submitManualRefund()">Process Refund</button>
+        <div id="refund-result" style="margin-top:.85rem;font-size:.72rem;color:var(--mu)"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Refund Ledger Events</div>
+        <div id="recent-refund-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
+      </div>
+    </div>
+
+    <div class="view" id="view-reconciliation">
+      <div class="card">
+        <div class="card-title">Payment Reconciliation</div>
+        <div style="background:rgba(201,150,58,.06);border:1px solid var(--bdr);border-radius:8px;padding:.75rem 1rem;font-size:.72rem;color:var(--mu);margin-bottom:1rem;line-height:1.65">
+          Checks unpaid payment orders against Razorpay and queues captured payments for activation. A scheduled job runs daily; use manual run after support complaints.
+        </div>
+        <button class="btn-primary" onclick="runManualReconciliation()">Run Reconciliation Now</button>
+        <div id="reconciliation-result" style="margin-top:.85rem;font-size:.72rem;color:var(--mu)"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Payments</div>
+        <div id="recent-payment-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Reconciliation Runs</div>
+        <div id="reconciliation-run-list" style="display:flex;flex-direction:column;gap:.55rem"></div>
       </div>
     </div>
 
@@ -1474,6 +1530,85 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
       </div>
     </div>
 
+    <!-- ══ AGENT SETTINGS ══ -->
+    <div class="view" id="view-agentsettings">
+      <div class="grid4" style="margin-bottom:1rem">
+        <div class="sc"><div class="sc-lbl">Active Agents</div><div class="sc-val" id="as-active-agents">—</div><div class="sc-sub">Impacted by settings</div></div>
+        <div class="sc"><div class="sc-lbl">WhatsApp Cost</div><div class="sc-val" id="as-wa-cost">—</div><div class="sc-sub">Last 30 days estimate</div></div>
+        <div class="sc"><div class="sc-lbl">Tier Count</div><div class="sc-val" id="as-tier-count">—</div><div class="sc-sub">Enabled commission tiers</div></div>
+        <div class="sc"><div class="sc-lbl">Festivals</div><div class="sc-val" id="as-festival-count">—</div><div class="sc-sub">Outreach calendar</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Commission Settings</div>
+        <div class="grid4">
+          <div><div class="f-lbl">Default Commission Rate %</div><input class="f-inp" id="as-default-rate" type="number" min="0" max="100" step="0.01"></div>
+          <div><div class="f-lbl">Lock Period Days</div><input class="f-inp" id="as-lock-days" type="number" min="0"></div>
+          <div><div class="f-lbl">Minimum Payout Amount</div><input class="f-inp" id="as-min-payout" type="number" min="0"></div>
+          <div><div class="f-lbl">Payout SLA Business Days</div><input class="f-inp" id="as-payout-sla" type="number" min="1"></div>
+          <div><div class="f-lbl">TDS Threshold Per FY</div><input class="f-inp" id="as-tds-threshold" type="number" min="0"></div>
+          <div><div class="f-lbl">TDS Rate %</div><input class="f-inp" id="as-tds-rate" type="number" min="0" max="100" step="0.01"></div>
+        </div>
+        <button class="btn-primary" style="margin-top:.9rem" onclick="saveAgentCommissionSettings()">Save Changes</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tier Configuration</div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Tier</th><th>Min Referrals</th><th>Commission Rate</th><th>Monthly Bonus</th><th>Enabled</th><th></th></tr></thead>
+            <tbody id="as-tier-body"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+          <button class="btn-sm btn-gd" onclick="addAgentTierRow()">Add New Tier</button>
+          <button class="btn-primary" onclick="saveAgentTiers()">Save Changes</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Festival Calendar</div>
+        <div id="as-festival-list" style="display:flex;flex-direction:column;gap:.6rem"></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+          <button class="btn-sm btn-gd" onclick="addFestivalRow()">Add Festival</button>
+          <button class="btn-primary" onclick="saveAgentFestivals()">Save Festivals</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-title">Leaderboard Toggle</div>
+          <div class="f-row"><div><div class="f-lbl">Leaderboard Enabled?</div></div><input id="as-lb-enabled" type="checkbox"></div>
+          <div class="f-row"><div><div class="f-lbl">Reset Period</div></div><select class="f-sel" id="as-lb-period"><option value="monthly">Monthly</option><option value="weekly">Weekly</option></select></div>
+          <div class="f-row"><div><div class="f-lbl">Ranking Metric</div></div><select class="f-sel" id="as-lb-metric"><option value="paid">Paid referrals</option><option value="signups">Signups</option><option value="commission">Commission</option></select></div>
+          <div class="f-row"><div><div class="f-lbl">Show Top</div></div><input class="f-inp" id="as-lb-showtop" type="number" min="1" style="width:90px"></div>
+          <div class="f-row"><div><div class="f-lbl">Anonymize Names</div></div><input id="as-lb-anon" type="checkbox"></div>
+          <div class="grid3">
+            <div><div class="f-lbl">Reward Top 1</div><input class="f-inp" id="as-lb-top1" type="number" min="0"></div>
+            <div><div class="f-lbl">Reward Top 3</div><input class="f-inp" id="as-lb-top3" type="number" min="0"></div>
+            <div><div class="f-lbl">Reward Top 10</div><input class="f-inp" id="as-lb-top10" type="number" min="0"></div>
+          </div>
+          <button class="btn-primary" style="margin-top:.8rem" onclick="saveAgentLeaderboard()">Save Changes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">WhatsApp Notification Toggle</div>
+          <div id="as-wa-warning" style="display:none;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.22);border-radius:8px;padding:.7rem .85rem;font-size:.72rem;color:var(--rd);line-height:1.6;margin-bottom:.75rem">
+            ⚠ WhatsApp notifications are currently DISABLED.<br>
+            Configure <code>WHATSAPP_API_PROVIDER</code>, <code>WHATSAPP_API_KEY</code>, and <code>WHATSAPP_SENDER_NUMBER</code> in Cloud Functions environment, then toggle this on.
+          </div>
+          <div class="f-row"><div><div class="f-lbl">WhatsApp Notifications Enabled?</div></div><input id="as-wa-enabled" type="checkbox"></div>
+          <div class="f-row"><div><div class="f-lbl">Daily Send Cap</div><div class="f-sub">Maximum WhatsApp sends in any rolling 24h window</div></div><input class="f-inp" id="as-wa-daily-cap" type="number" min="1" style="width:110px"></div>
+          <div id="as-wa-triggers" style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin:.7rem 0"></div>
+          <div style="font-size:.72rem;color:var(--mu);line-height:1.6" id="as-wa-estimate">Estimated monthly cost: —</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem">
+            <button class="btn-sm btn-gd" onclick="sendAgentWhatsappTest()">Send test notification to me</button>
+            <button class="btn-primary" onclick="saveAgentWhatsappSettings()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ SERVICE PARTNERS ══ -->
     <div class="view" id="view-partners">
       <div class="card">
@@ -1498,7 +1633,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
           <div class="card-title">🌐 Contact & Platform Details</div>
           <div class="f-row"><div><div class="f-lbl">WhatsApp / Mobile Number</div><div class="f-sub">Shown on all pages · WhatsApp float button</div></div><input class="f-inp" value="+91 94401 76078" style="width:160px"></div>
           <div class="f-row"><div><div class="f-lbl">Business Name</div><div class="f-sub">Used in checkout and payment receipts</div></div><input class="f-inp" id="site-business-name" value="Parichayam" style="width:180px"></div>
-          <div class="f-row"><div><div class="f-lbl">Email Address</div></div><input class="f-inp" id="site-support-email" value="hello@parichayam.co.in" style="width:180px"></div>
+          <div class="f-row"><div><div class="f-lbl">Email Address</div></div><input class="f-inp" id="site-support-email" value="support@parichayam.co.in" style="width:180px"></div>
           <div class="f-row"><div><div class="f-lbl">UPI ID for Payments</div></div><input class="f-inp" id="site-upi-id" value="parichayam@upi" style="width:160px"></div>
           <div class="f-row"><div><div class="f-lbl">Office Address</div></div><input class="f-inp" id="site-office-location" value="Vijayawada, AP" style="width:160px"></div>
           <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bdr)">
@@ -1610,11 +1745,37 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-h
     <!-- ══ MATCHMAKER OPS LINK ══ -->
     <div class="view" id="view-matchmakerops" style="display:none">
       <div class="card">
-        <div class="card-title">💼 Matchmaker Operations Portal</div>
-        <div style="font-size:.75rem;color:var(--mu);line-height:1.75">
-          Matchmakers now have a dedicated operational workspace with assigned clients, follow-up statuses, verification tasks, earnings context, and direct call / email / WhatsApp actions.
+        <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div class="card-title">💼 Matchmaker Operations</div>
+            <div style="font-size:.72rem;color:var(--mu);line-height:1.7">Monitor matchmaker load, subscription status, and emergency reassignment from one admin-only panel.</div>
+          </div>
+          <div style="display:flex;gap:.45rem;flex-wrap:wrap">
+            <button class="btn-sm btn-gd" onclick="renderMatchmakerOpsAdmin()">Refresh</button>
+            <a class="btn-sm btn-bl" href="/matchmaker" target="_blank" rel="noopener" style="text-decoration:none">Open Workboard</a>
+          </div>
         </div>
-        <div style="margin-top:1rem"><a class="btn-primary" href="/matchmaker" target="_blank" rel="noopener">Open Matchmaker Portal →</a></div>
+        <div class="grid4" style="margin:1rem 0">
+          <div class="sc"><div class="sc-lbl">Active Subs</div><div class="sc-val" id="mmop-active">0</div><div class="sc-sub">Currently served</div></div>
+          <div class="sc"><div class="sc-lbl">Cancel Pending</div><div class="sc-val" id="mmop-cancelled">0</div><div class="sc-sub">Active until period end</div></div>
+          <div class="sc"><div class="sc-lbl">Expired</div><div class="sc-val" id="mmop-expired">0</div><div class="sc-sub">Lifecycle complete</div></div>
+          <div class="sc"><div class="sc-lbl">Mutual</div><div class="sc-val" id="mmop-mutual">0</div><div class="sc-sub">Ready for family intro</div></div>
+        </div>
+        <div class="grid2" style="margin-bottom:1rem">
+          <div>
+            <div class="card-title" style="margin-top:.1rem">Matchmakers</div>
+            <div id="mmop-matchmakers"><div style="font-size:.76rem;color:var(--mu)">Open this tab to load matchmaker load data.</div></div>
+          </div>
+          <div>
+            <div class="card-title" style="margin-top:.1rem">Reassign Member</div>
+            <div class="f-row"><div><div class="f-lbl">Member</div><div class="f-sub">Only members with matchmaker lifecycle data are listed.</div></div><select class="f-sel" id="mmop-member-select"><option value="">Load data first</option></select></div>
+            <div class="f-row"><div><div class="f-lbl">New matchmaker</div><div class="f-sub">Must be an active MATCHMAKER role.</div></div><select class="f-sel" id="mmop-matchmaker-select"><option value="">Load data first</option></select></div>
+            <div class="f-row"><div><div class="f-lbl">Reason</div><div class="f-sub">Stored in reassignment history and activity log.</div></div><input class="f-inp" id="mmop-reassign-reason" maxlength="240" placeholder="Example: workload balancing"></div>
+            <button class="btn-primary" onclick="adminReassignMatchmakerFromOps()">Reassign Matchmaker</button>
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:.1rem">Subscriptions</div>
+        <div id="mmop-subscriptions"><div style="font-size:.76rem;color:var(--mu)">Subscription rows will appear after refresh.</div></div>
       </div>
     </div>
 
@@ -1684,6 +1845,10 @@ const ADMIN_VIEW_META = {
   addons:{ title:'Add-On Pricing', short:'Add-Ons', subtitle:'Tune connects, boosts, kundali packs, and other upsell pricing without hunting across tabs.', keywords:'add-ons addon connects packs boosts upsell pricing' },
   ads:{ title:'Advertisement Management', short:'Ads', subtitle:'Approve advertiser inventory, review slots, and keep revenue placements organized.', keywords:'ads advertisements banners placements advertisers approvals' },
   agents:{ title:'Agents & Franchise', short:'Agents', subtitle:'Monitor agent activity, referrals, payouts, and partner performance by city.', keywords:'agents franchise referral payouts partner cities commissions' },
+  agentsettings:{ title:'Agent Settings', short:'Agent Settings', subtitle:'Tune commission, tiers, festival outreach, leaderboard and WhatsApp costs.', keywords:'agent settings commission tiers whatsapp leaderboard festivals payout tds' },
+  alerts:{ title:'Payment Alerts', short:'Alerts', subtitle:'Recover captured payments that need activation and review urgent support risk.', keywords:'payment alerts pending activations failures captured recovery' },
+  refunds:{ title:'Manual Refunds', short:'Refunds', subtitle:'Issue Razorpay refunds and let the ledger create refund and clawback events.', keywords:'refunds razorpay clawback ledger member order' },
+  reconciliation:{ title:'Payment Reconciliation', short:'Reconcile', subtitle:'Compare pending orders with Razorpay and queue missing activations.', keywords:'reconciliation payments orders razorpay retry queue' },
   dashbuilder:{ title:'Dashboard Builder', short:'Dashboard Builder', subtitle:'Control what members see first and shape the live dashboard experience.', keywords:'dashboard builder widgets layout visibility customer home' },
   formbuilder:{ title:'Profile Form Builder', short:'Form Builder', subtitle:'Adjust registration and profile fields with clearer visibility into required sections.', keywords:'form builder fields registration sections required profile form' },
   features:{ title:'Feature Toggles', short:'Features', subtitle:'Switch live capabilities on or off and keep operational settings in one control room.', keywords:'features toggles settings switches trial kundali visibility' },
@@ -1892,6 +2057,8 @@ function nav(id,el){
   if(id==='customfields') renderCustomFieldsList();
   if(id==='gotramgr') renderGotras();
   if(id==='agents') { loadAgentsView(); }
+  if(id==='agentsettings') { loadAgentSettingsView(); }
+  if(id==='alerts' || id==='refunds' || id==='reconciliation') loadPaymentResilienceView(id);
   if(id==='addons') { loadAddonPrices(); loadConnectPacks(); }
   if(id==='admgr' || id==='ads') renderAdList();
   if(id==='profiles') renderProfilesAdminPanel();
@@ -1903,6 +2070,7 @@ function nav(id,el){
   if(id==='content') { loadSiteSettings(); loadPaymentSettings(); loadAuthSettings(); loadAnnouncementBanner(); }
   if(id==='verify') renderVerificationQueue();
   if(id==='staff') renderStaffDashboard();
+  if(id==='matchmakerops') renderMatchmakerOpsAdmin();
   if(id==='reports') renderFinanceReports();
 }
 function tgl(el){el.classList.toggle('on');el.classList.toggle('off');}
@@ -2434,6 +2602,7 @@ let latestVerificationQueue = [];
 let latestStaffDirectory = [];
 let latestStaffAssignments = [];
 let latestStaffActivity = [];
+let latestMatchmakerOps = { members: [], matchmakers: [], subscriptions: [], stats: null };
 let verificationReminderTimer = null;
 let verificationReminderSignature = '';
 
@@ -3149,6 +3318,177 @@ async function fetchAdminMembers(limitValue = 500) {
 async function fetchStaffMembers(sourceMembers) {
   const members = Array.isArray(sourceMembers) ? sourceMembers : await fetchAdminMembers();
   return members.filter(member => isStaffRole(member.role));
+}
+
+function parseMatchmakerOpsTimestamp(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === 'function') {
+    try { return value.toDate().getTime(); } catch (error) { return 0; }
+  }
+  if (Number.isFinite(value.seconds)) return Number(value.seconds) * 1000;
+  if (Number.isFinite(value._seconds)) return Number(value._seconds) * 1000;
+  return 0;
+}
+
+function formatMatchmakerOpsDate(value) {
+  const ms = parseMatchmakerOpsTimestamp(value);
+  if (!ms) return '—';
+  return new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function getAdminMemberUid(member = {}) {
+  return String(member.uid || member.id || member.memberUid || '').trim();
+}
+
+function getMatchmakerOpsMemberLabel(member = {}) {
+  const parts = [
+    member.name || member.firstName || 'Member',
+    member.profileNumber || '',
+    member.city || '',
+  ].filter(Boolean);
+  return parts.join(' · ');
+}
+
+function getMatchmakerOpsStatusLabel(subscription = {}) {
+  const status = String(subscription.status || 'active').toLowerCase();
+  if (status === 'active' && subscription.cancelledAt) return 'Cancels at end';
+  return formatWorkflowLabel(status || 'active');
+}
+
+function renderMatchmakerOpsSelects(members, matchmakers, subscriptions) {
+  const memberSelect = document.getElementById('mmop-member-select');
+  const matchmakerSelect = document.getElementById('mmop-matchmaker-select');
+  const subscriptionMemberIds = new Set((subscriptions || []).map(item => String(item.memberUid || '')).filter(Boolean));
+  const eligibleMembers = (members || [])
+    .filter(member => subscriptionMemberIds.has(getAdminMemberUid(member)) || member.matchmakerActive || member.assignedMatchmakerUid || member.matchmakerSubscriptionId)
+    .sort((left, right) => String(left.name || '').localeCompare(String(right.name || '')));
+  if (memberSelect) {
+    memberSelect.innerHTML = ['<option value="">Choose member</option>'].concat(eligibleMembers.map(member => {
+      const uid = getAdminMemberUid(member);
+      return `<option value="${escapeHtml(uid)}">${escapeHtml(getMatchmakerOpsMemberLabel(member))}</option>`;
+    })).join('');
+  }
+  if (matchmakerSelect) {
+    matchmakerSelect.innerHTML = ['<option value="">Choose matchmaker</option>'].concat((matchmakers || []).map(person => {
+      const uid = getAdminMemberUid(person);
+      return `<option value="${escapeHtml(uid)}">${escapeHtml(person.name || person.email || person.phone || 'Matchmaker')}</option>`;
+    })).join('');
+  }
+}
+
+async function renderMatchmakerOpsAdmin() {
+  const matchmakerWrap = document.getElementById('mmop-matchmakers');
+  const subscriptionWrap = document.getElementById('mmop-subscriptions');
+  if (matchmakerWrap) matchmakerWrap.innerHTML = '<div style="font-size:.76rem;color:var(--mu);padding:.8rem 0">Loading matchmakers...</div>';
+  if (subscriptionWrap) subscriptionWrap.innerHTML = '<div style="font-size:.76rem;color:var(--mu);padding:.8rem 0">Loading subscriptions...</div>';
+  try {
+    const [members, stats] = await Promise.all([
+      fetchAdminMembers(750),
+      window.ParichayamFirebase?.getMatchmakerStats
+        ? window.ParichayamFirebase.getMatchmakerStats({ scope: 'global' })
+        : Promise.resolve({ subscriptions: [] }),
+    ]);
+    const matchmakers = (members || [])
+      .filter(member => normalizeStaffRole(member.role) === 'MATCHMAKER')
+      .sort((left, right) => String(left.name || '').localeCompare(String(right.name || '')));
+    const subscriptions = Array.isArray(stats?.subscriptions) ? stats.subscriptions : [];
+    latestMatchmakerOps = { members, matchmakers, subscriptions, stats };
+
+    const metrics = {
+      'mmop-active': Number(stats?.activeSubscriptions || 0),
+      'mmop-cancelled': Number(stats?.cancelledSubscriptions || 0),
+      'mmop-expired': Number(stats?.expiredSubscriptions || 0),
+      'mmop-mutual': Number(stats?.mutualInterest || 0),
+    };
+    Object.entries(metrics).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value.toLocaleString('en-IN');
+    });
+    renderMatchmakerOpsSelects(members, matchmakers, subscriptions);
+
+    if (matchmakerWrap) {
+      matchmakerWrap.innerHTML = matchmakers.length ? matchmakers.map(person => {
+        const uid = getAdminMemberUid(person);
+        const assigned = subscriptions.filter(item => String(item.assignedMatchmakerUid || '') === uid);
+        const active = assigned.filter(item => String(item.status || '').toLowerCase() === 'active').length;
+        const cancelling = assigned.filter(item => item.cancelledAt && String(item.status || '').toLowerCase() === 'active').length;
+        return `
+          <div style="background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:.85rem;margin-bottom:.65rem">
+            <div style="display:flex;justify-content:space-between;gap:.7rem;flex-wrap:wrap;align-items:flex-start">
+              <div>
+                <div style="font-size:.82rem;font-weight:600;color:var(--tx)">${escapeHtml(person.name || person.email || person.phone || 'Matchmaker')}</div>
+                <div style="font-size:.63rem;color:var(--mu);margin-top:.16rem">${escapeHtml(person.city || 'All cities')} · ${escapeHtml(person.phone || person.email || 'No contact')}</div>
+              </div>
+              <span class="badge bg-gd">${active} active</span>
+            </div>
+            <div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.7rem">
+              <span class="badge bg-bl">${assigned.length} total subs</span>
+              <span class="badge ${cancelling ? 'bg-rd' : 'bg-gn'}">${cancelling} cancel pending</span>
+            </div>
+          </div>
+        `;
+      }).join('') : '<div style="font-size:.78rem;color:var(--mu);padding:1rem;text-align:center;border:1px dashed rgba(201,150,58,.2);border-radius:10px">No users currently have the MATCHMAKER role.</div>';
+    }
+
+    if (subscriptionWrap) {
+      const byMemberUid = new Map((members || []).map(member => [getAdminMemberUid(member), member]));
+      const byMatchmakerUid = new Map(matchmakers.map(person => [getAdminMemberUid(person), person]));
+      subscriptionWrap.innerHTML = subscriptions.length ? `
+        <table class="tbl">
+          <thead><tr><th>Member</th><th>Matchmaker</th><th>Plan</th><th>Status</th><th>Ends</th><th>Price</th></tr></thead>
+          <tbody>
+            ${subscriptions.map(item => {
+              const member = byMemberUid.get(String(item.memberUid || '')) || {};
+              const matchmaker = byMatchmakerUid.get(String(item.assignedMatchmakerUid || '')) || {};
+              return `<tr>
+                <td>${escapeHtml(member.name || item.memberUid || 'Member')}</td>
+                <td>${escapeHtml(matchmaker.name || item.assignedMatchmakerUid || 'Unassigned')}</td>
+                <td>${escapeHtml(formatWorkflowLabel(item.plan || 'plan'))}</td>
+                <td>${escapeHtml(getMatchmakerOpsStatusLabel(item))}</td>
+                <td>${escapeHtml(formatMatchmakerOpsDate(item.endDate))}</td>
+                <td>${formatCurrency(item.price || 0)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : '<div style="font-size:.78rem;color:var(--mu);padding:1rem;text-align:center;border:1px dashed rgba(201,150,58,.2);border-radius:10px">No matchmaker subscriptions found yet.</div>';
+    }
+  } catch (error) {
+    console.error('Unable to render matchmaker ops:', error);
+    if (matchmakerWrap) matchmakerWrap.innerHTML = '<div style="font-size:.78rem;color:var(--rd);padding:1rem">Unable to load matchmaker ops. Check admin auth and function logs.</div>';
+    if (subscriptionWrap) subscriptionWrap.innerHTML = '';
+    toast(error?.message || 'Unable to load matchmaker ops.', 'error');
+  }
+}
+
+async function adminReassignMatchmakerFromOps() {
+  const memberUid = document.getElementById('mmop-member-select')?.value || '';
+  const newMatchmakerUid = document.getElementById('mmop-matchmaker-select')?.value || '';
+  const reason = document.getElementById('mmop-reassign-reason')?.value || '';
+  if (!memberUid || !newMatchmakerUid) {
+    toast('Choose a member and a matchmaker before reassigning.', 'warning');
+    return;
+  }
+  try {
+    await window.ParichayamFirebase.adminReassignMatchmaker({
+      memberUid,
+      newMatchmakerUid,
+      reason: reason.trim() || 'Admin reassignment from Matchmaker Ops',
+    });
+    toast('Matchmaker reassigned successfully.', 'success');
+    const reasonInput = document.getElementById('mmop-reassign-reason');
+    if (reasonInput) reasonInput.value = '';
+    await renderMatchmakerOpsAdmin();
+  } catch (error) {
+    console.error('Matchmaker reassignment failed:', error);
+    toast(error?.message || 'Unable to reassign matchmaker.', 'error');
+  }
 }
 
 async function fetchVerificationRequests() {
@@ -4701,7 +5041,7 @@ async function loadPlanPrices(options = {}) {
 const DEFAULT_SITE_SETTINGS = {
   businessName: 'Parichayam',
   supportPhone: '+91 94401 76078',
-  supportEmail: 'hello@parichayam.co.in',
+  supportEmail: 'support@parichayam.co.in',
   upiId: 'parichayam@upi',
   officeLocation: 'Vijayawada, AP',
 };
@@ -6205,6 +6545,341 @@ function _fmtCur(v) {
   return 'Rs. ' + Number(v || 0).toLocaleString('en-IN');
 }
 
+let _agentSettingsCache = null;
+
+async function loadAgentSettingsView(){
+  const root = document.getElementById('view-agentsettings');
+  if(!root) return;
+  try{
+    _agentSettingsCache = await adminCloudFetch('getAgentSettings');
+    renderAgentSettingsView();
+  }catch(error){
+    toast('Unable to load agent settings: '+(error.message||error),'error');
+  }
+}
+
+function renderAgentSettingsView(){
+  const data = _agentSettingsCache || {};
+  const cs = data.commissionSettings || {};
+  const tiers = data.tiers || [];
+  const lb = data.leaderboardSettings || {};
+  const wa = data.whatsappSettings || {};
+  const setText = (id,value)=>{ const el=document.getElementById(id); if(el) el.textContent=value; };
+  setText('as-active-agents', data.activeAgentCount ?? '0');
+  setText('as-wa-cost', formatCurrency(data.notificationCost?.estimatedMonthlyCost || 0));
+  setText('as-tier-count', tiers.filter(t=>t.enabled!==false).length);
+  setText('as-festival-count', (data.festivals||[]).length);
+  const setVal = (id,value)=>{ const el=document.getElementById(id); if(el) el.value=value ?? ''; };
+  setVal('as-default-rate', cs.defaultCommissionRate);
+  setVal('as-lock-days', cs.lockPeriodDays);
+  setVal('as-min-payout', cs.minimumPayoutAmount);
+  setVal('as-payout-sla', cs.payoutSlaBusinessDays);
+  setVal('as-tds-threshold', cs.tdsThreshold);
+  setVal('as-tds-rate', cs.tdsRate);
+  renderAgentTierRows(tiers);
+  renderFestivalRows(data.festivals || []);
+  const lbEnabled = document.getElementById('as-lb-enabled'); if(lbEnabled) lbEnabled.checked = lb.enabled !== false;
+  setVal('as-lb-period', lb.resetPeriod || 'monthly');
+  setVal('as-lb-metric', lb.metric || 'paid');
+  setVal('as-lb-showtop', lb.showTop || 10);
+  const lbAnon = document.getElementById('as-lb-anon'); if(lbAnon) lbAnon.checked = lb.anonymizeNames !== false;
+  setVal('as-lb-top1', lb.rewards?.top1 || 0);
+  setVal('as-lb-top3', lb.rewards?.top3 || 0);
+  setVal('as-lb-top10', lb.rewards?.top10 || 0);
+  const waEnabled = document.getElementById('as-wa-enabled'); if(waEnabled) waEnabled.checked = wa.enabled === true;
+  const waWarning = document.getElementById('as-wa-warning'); if(waWarning) waWarning.style.display = wa.enabled === true ? 'none' : 'block';
+  setVal('as-wa-daily-cap', wa.dailyCap || 200);
+  const triggerBox = document.getElementById('as-wa-triggers');
+  if(triggerBox){
+    const triggers = wa.triggers || {};
+    triggerBox.innerHTML = Object.keys(triggers).map(key=>
+      '<label style="display:flex;gap:.4rem;align-items:center;font-size:.72rem;color:var(--mu)"><input type="checkbox" class="as-wa-trigger" data-trigger="'+_esc(key)+'" '+(triggers[key]!==false?'checked':'')+'> '+_esc(key)+'</label>'
+    ).join('');
+  }
+  setText('as-wa-estimate','Estimated monthly cost: '+formatCurrency(data.notificationCost?.estimatedMonthlyCost || 0)+' based on last 30 days');
+}
+
+function renderAgentTierRows(tiers){
+  const body = document.getElementById('as-tier-body');
+  if(!body) return;
+  body.innerHTML = (tiers||[]).map((tier,idx)=>
+    '<tr data-tier-row><td><input class="f-inp as-tier-name" value="'+_esc(tier.name||'')+'"></td><td><input class="f-inp as-tier-min" type="number" min="0" value="'+Number(tier.minPaidReferrals||0)+'"></td><td><input class="f-inp as-tier-rate" type="number" min="0" max="100" step="0.01" value="'+Number(tier.commissionRate||0)+'"></td><td><input class="f-inp as-tier-bonus" type="number" min="0" value="'+Number(tier.monthlyBonus||0)+'"></td><td><input class="as-tier-enabled" type="checkbox" '+(tier.enabled!==false?'checked':'')+'></td><td><button class="btn-sm btn-rd" onclick="deleteAgentTierRow(this)">Delete</button></td></tr>'
+  ).join('');
+}
+
+function collectAgentTierRows(){
+  return Array.from(document.querySelectorAll('[data-tier-row]')).map((row,idx)=>({
+    id: (row.querySelector('.as-tier-name')?.value || ('tier-'+idx)).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
+    name: row.querySelector('.as-tier-name')?.value || ('Tier '+(idx+1)),
+    minPaidReferrals: Number(row.querySelector('.as-tier-min')?.value || 0),
+    commissionRate: Number(row.querySelector('.as-tier-rate')?.value || 0),
+    monthlyBonus: Number(row.querySelector('.as-tier-bonus')?.value || 0),
+    enabled: row.querySelector('.as-tier-enabled')?.checked !== false,
+  }));
+}
+
+function addAgentTierRow(){
+  const tiers = collectAgentTierRows();
+  tiers.push({ id:'new-tier', name:'New Tier', minPaidReferrals:0, commissionRate:15, monthlyBonus:0, enabled:true });
+  renderAgentTierRows(tiers);
+}
+
+function deleteAgentTierRow(btn){
+  if(!confirm('Delete this tier? Agents keep existing ledger history.')) return;
+  btn.closest('tr')?.remove();
+}
+
+function renderFestivalRows(festivals){
+  const el = document.getElementById('as-festival-list');
+  if(!el) return;
+  el.innerHTML = (festivals||[]).map((f,idx)=>festivalRowHtml(f,idx)).join('');
+}
+
+function festivalRowHtml(f,idx){
+  return '<div data-festival-row style="background:var(--card2);border:1px solid var(--bdr);border-radius:10px;padding:.85rem">'
+    +'<div class="grid4"><div><div class="f-lbl">Name</div><input class="f-inp as-f-name" value="'+_esc(f.name||'')+'"></div><div><div class="f-lbl">Date</div><input class="f-inp as-f-date" type="date" value="'+_esc(String(f.date||'').slice(0,10))+'"></div><div><div class="f-lbl">Promo Code</div><input class="f-inp as-f-promo" value="'+_esc(f.promoCode||'')+'"></div><div><div class="f-lbl">Reminder Days Before</div><input class="f-inp as-f-reminder" type="number" min="0" value="'+Number(f.reminderDaysBefore||7)+'"></div></div>'
+    +'<div class="grid2" style="margin-top:.65rem"><div><div class="f-lbl">English Message</div><textarea class="f-inp as-f-en" rows="2">'+_esc(f.englishMessage||'')+'</textarea></div><div><div class="f-lbl">Telugu Message</div><textarea class="f-inp as-f-te" rows="2">'+_esc(f.teluguMessage||'')+'</textarea></div></div>'
+    +'<div style="display:flex;gap:.6rem;align-items:center;margin-top:.55rem"><label style="font-size:.72rem;color:var(--mu)"><input class="as-f-enabled" type="checkbox" '+(f.enabled!==false?'checked':'')+'> Enabled</label><button class="btn-sm btn-rd" onclick="this.closest(\'[data-festival-row]\').remove()">Delete</button></div></div>';
+}
+
+function collectFestivalRows(){
+  return Array.from(document.querySelectorAll('[data-festival-row]')).map((row,idx)=>({
+    id: (row.querySelector('.as-f-name')?.value || ('festival-'+idx)).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''),
+    name: row.querySelector('.as-f-name')?.value || ('Festival '+(idx+1)),
+    date: row.querySelector('.as-f-date')?.value || '',
+    promoCode: row.querySelector('.as-f-promo')?.value || '',
+    reminderDaysBefore: Number(row.querySelector('.as-f-reminder')?.value || 7),
+    englishMessage: row.querySelector('.as-f-en')?.value || '',
+    teluguMessage: row.querySelector('.as-f-te')?.value || '',
+    enabled: row.querySelector('.as-f-enabled')?.checked !== false,
+  }));
+}
+
+function addFestivalRow(){
+  const el = document.getElementById('as-festival-list');
+  if(el) el.insertAdjacentHTML('beforeend', festivalRowHtml({ name:'New Festival', date:new Date().toISOString().slice(0,10), enabled:true, reminderDaysBefore:7 }, Date.now()));
+}
+
+function collectAgentCommissionSettings(){
+  return {
+    defaultCommissionRate:Number(document.getElementById('as-default-rate')?.value||15),
+    lockPeriodDays:Number(document.getElementById('as-lock-days')?.value||30),
+    minimumPayoutAmount:Number(document.getElementById('as-min-payout')?.value||500),
+    payoutSlaBusinessDays:Number(document.getElementById('as-payout-sla')?.value||3),
+    tdsThreshold:Number(document.getElementById('as-tds-threshold')?.value||25000),
+    tdsRate:Number(document.getElementById('as-tds-rate')?.value||5),
+  };
+}
+
+async function saveAgentSettingsPayload(payload, message){
+  if(!confirm('These changes affect '+(_agentSettingsCache?.activeAgentCount||0)+' active agents. Continue?')) return;
+  await adminCloudFetch('adminSaveAgentSettings',{ body: payload });
+  toast(message || 'Agent settings saved', 'success');
+  await loadAgentSettingsView();
+}
+
+async function saveAgentCommissionSettings(){ await saveAgentSettingsPayload({ commissionSettings: collectAgentCommissionSettings() }, 'Commission settings saved'); }
+async function saveAgentTiers(){ await saveAgentSettingsPayload({ tiers: collectAgentTierRows() }, 'Tier configuration saved'); }
+async function saveAgentFestivals(){ await saveAgentSettingsPayload({ festivals: collectFestivalRows() }, 'Festival calendar saved'); }
+async function saveAgentLeaderboard(){
+  await saveAgentSettingsPayload({ leaderboardSettings:{
+    enabled:document.getElementById('as-lb-enabled')?.checked === true,
+    resetPeriod:document.getElementById('as-lb-period')?.value || 'monthly',
+    metric:document.getElementById('as-lb-metric')?.value || 'paid',
+    showTop:Number(document.getElementById('as-lb-showtop')?.value||10),
+    anonymizeNames:document.getElementById('as-lb-anon')?.checked !== false,
+    rewards:{ top1:Number(document.getElementById('as-lb-top1')?.value||0), top3:Number(document.getElementById('as-lb-top3')?.value||0), top10:Number(document.getElementById('as-lb-top10')?.value||0) },
+  } }, 'Leaderboard settings saved');
+}
+async function saveAgentWhatsappSettings(){
+  const triggers = {};
+  document.querySelectorAll('.as-wa-trigger').forEach(el=>{ triggers[el.dataset.trigger] = el.checked; });
+  await saveAgentSettingsPayload({ whatsappSettings:{ enabled:document.getElementById('as-wa-enabled')?.checked === true, dailyCap:Number(document.getElementById('as-wa-daily-cap')?.value||200), triggers } }, 'WhatsApp settings saved');
+}
+
+async function sendAgentWhatsappTest(){
+  try{
+    await adminCloudFetch('adminSendTestAgentNotification',{ body:{} });
+    toast('✅ Test WhatsApp notification sent. Check your phone.', 'success');
+  }catch(error){
+    toast('Test notification failed: '+(error.message||error), 'error');
+  }
+}
+
+let _paymentResilienceCache = {
+  pendingActivations: [],
+  adminAlerts: [],
+  recentPayments: [],
+  paymentOrders: [],
+  refunds: [],
+  reconciliationRuns: [],
+};
+
+function _resilienceCard(label, value, hint) {
+  return `<div style="background:var(--wh);border:1px solid var(--bdr);border-radius:8px;padding:.8rem">
+    <div style="font-size:.62rem;color:var(--mu);text-transform:uppercase;letter-spacing:.08em">${_esc(label)}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--d);margin:.2rem 0">${_esc(value)}</div>
+    <div style="font-size:.68rem;color:var(--mu)">${_esc(hint || '')}</div>
+  </div>`;
+}
+
+function _resilienceRow(title, subtitle, meta, actions) {
+  return `<div style="background:var(--wh);border:1px solid var(--bdr);border-radius:8px;padding:.8rem;display:flex;justify-content:space-between;gap:.85rem;align-items:flex-start;flex-wrap:wrap">
+    <div style="min-width:220px;flex:1">
+      <div style="font-size:.82rem;font-weight:700;color:var(--tx)">${_esc(title)}</div>
+      <div style="font-size:.7rem;color:var(--mu);margin-top:.22rem;line-height:1.55">${_esc(subtitle)}</div>
+      ${meta ? `<div style="font-size:.62rem;color:var(--g);margin-top:.35rem">${_esc(meta)}</div>` : ''}
+    </div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">${actions || ''}</div>
+  </div>`;
+}
+
+function renderPaymentAlerts() {
+  const data = _paymentResilienceCache;
+  const openAlerts = data.adminAlerts.filter(a => String(a.status || 'open') === 'open');
+  const pending = data.pendingActivations.filter(p => String(p.status || '').toLowerCase() !== 'completed');
+  const needsAdmin = pending.filter(p => String(p.status || '').toLowerCase() === 'needs_admin');
+  const summary = document.getElementById('payment-alert-summary');
+  if (summary) {
+    summary.innerHTML = [
+      _resilienceCard('Open alerts', openAlerts.length, 'Admin attention required'),
+      _resilienceCard('Pending activations', pending.length, 'Captured payments awaiting service'),
+      _resilienceCard('Needs admin', needsAdmin.length, 'Retry queue stopped'),
+      _resilienceCard('Recent payments', data.recentPayments.length, 'Local payment ledger docs'),
+    ].join('');
+  }
+  const list = document.getElementById('payment-alert-list');
+  if (!list) return;
+  const rows = [];
+  openAlerts.slice(0, 20).forEach(alert => {
+    rows.push(_resilienceRow(
+      alert.title || alert.type || 'Payment alert',
+      alert.message || '',
+      `Order ${alert.orderId || '-'} · Payment ${alert.paymentId || '-'} · ${_fmtDate(alert.createdAt)}`,
+      `<button class="btn-sm btn-gd" onclick="acknowledgeAdminAlert('${_esc(alert.id)}')">Acknowledge</button>`
+    ));
+  });
+  pending.slice(0, 20).forEach(item => {
+    rows.push(_resilienceRow(
+      `Pending activation: ${item.paymentId || item.id}`,
+      item.lastError || 'Activation has not completed yet.',
+      `Status ${item.status || 'pending'} · Order ${item.orderId || '-'} · Retries ${item.retryCount || 0}`,
+      `<button class="btn-sm btn-gd" onclick="retryPendingActivation('${_esc(item.id)}')">Retry</button>`
+    ));
+  });
+  list.innerHTML = rows.length ? rows.join('') : _resilienceRow('No open payment alerts', 'Retry queue and support alerts are clear.', '', '');
+}
+
+function renderRefundsView() {
+  const list = document.getElementById('recent-refund-list');
+  if (!list) return;
+  const rows = (_paymentResilienceCache.refunds || []).slice(0, 30).map(event => _resilienceRow(
+    `${event.eventType || 'refund'} · ${_fmtCur(event.amount)}`,
+    event.refundReason || event.metadata?.notes || 'Refund ledger entry',
+    `Member ${event.memberId || '-'} · Order ${event.orderId || '-'} · ${_fmtDate(event.createdAt)}`,
+    ''
+  ));
+  list.innerHTML = rows.length ? rows.join('') : _resilienceRow('No refund events yet', 'Refund and clawback ledger events will appear here.', '', '');
+}
+
+function renderReconciliationView() {
+  const payments = document.getElementById('recent-payment-list');
+  if (payments) {
+    const rows = [
+      ...(_paymentResilienceCache.recentPayments || []).map(p => ({ ...p, _kind: 'payment' })),
+      ...(_paymentResilienceCache.paymentOrders || []).map(p => ({ ...p, _kind: 'order' })),
+    ].slice(0, 40).map(item => _resilienceRow(
+      `${item._kind === 'payment' ? 'Payment' : 'Order'} ${item.paymentId || item.razorpayOrderId || item.id}`,
+      `${item.purchaseType || '-'} · ${item.status || '-'} · ${_fmtCur(item.amountInr)}`,
+      `Member ${item.uid || '-'} · ${_fmtDate(item.createdAt || item.updatedAt)}`,
+      ''
+    ));
+    payments.innerHTML = rows.length ? rows.join('') : _resilienceRow('No payment records loaded', 'Recent payments and created orders will appear here.', '', '');
+  }
+  const runs = document.getElementById('reconciliation-run-list');
+  if (runs) {
+    const rows = (_paymentResilienceCache.reconciliationRuns || []).slice(0, 20).map(run => _resilienceRow(
+      `Run ${run.id}`,
+      `Scanned ${run.scanned || 0} · Captured found ${run.capturedFound || 0} · Activated ${run.activated || 0}`,
+      `${run.source || 'manual'} · ${_fmtDate(run.createdAt)}`,
+      ''
+    ));
+    runs.innerHTML = rows.length ? rows.join('') : _resilienceRow('No reconciliation runs yet', 'Run manually or wait for the scheduled daily job.', '', '');
+  }
+}
+
+async function loadPaymentResilienceView(activeTab) {
+  try {
+    const data = await adminCloudFetch('adminListPaymentResilience');
+    _paymentResilienceCache = {
+      pendingActivations: data.pendingActivations || [],
+      adminAlerts: data.adminAlerts || [],
+      recentPayments: data.recentPayments || [],
+      paymentOrders: data.paymentOrders || [],
+      refunds: data.refunds || [],
+      reconciliationRuns: data.reconciliationRuns || [],
+    };
+    renderPaymentAlerts();
+    renderRefundsView();
+    renderReconciliationView();
+  } catch (error) {
+    toast(error.message || 'Unable to load payment resilience data.', 'error');
+  }
+}
+
+async function retryPendingActivation(id) {
+  try {
+    await adminCloudFetch('adminRetryPendingActivation', { body: { pendingActivationId: id } });
+    toast('Pending activation retry attempted.', 'success');
+    await loadPaymentResilienceView('alerts');
+  } catch (error) {
+    toast(error.message || 'Retry failed.', 'error');
+  }
+}
+
+async function acknowledgeAdminAlert(id) {
+  try {
+    await adminCloudFetch('adminAcknowledgeAlert', { body: { alertId: id } });
+    toast('Alert acknowledged.', 'success');
+    await loadPaymentResilienceView('alerts');
+  } catch (error) {
+    toast(error.message || 'Unable to acknowledge alert.', 'error');
+  }
+}
+
+async function submitManualRefund() {
+  const body = {
+    memberId: document.getElementById('refund-member-id')?.value || '',
+    orderId: document.getElementById('refund-order-id')?.value || '',
+    amount: Number(document.getElementById('refund-amount')?.value || 0) || 0,
+    reason: document.getElementById('refund-reason')?.value || 'admin_cancel',
+    notes: document.getElementById('refund-notes')?.value || '',
+  };
+  const out = document.getElementById('refund-result');
+  try {
+    const result = await adminCloudFetch('processRefund', { body });
+    if (out) out.textContent = `Refund status ${result.status || 'processed'} · Refund event ${result.refundEventId || '-'} · Clawback ${result.clawbackAmount || 0}`;
+    toast('Refund processed and ledger updated.', 'success');
+    await loadPaymentResilienceView('refunds');
+  } catch (error) {
+    if (out) out.textContent = error.message || 'Refund failed.';
+    toast(error.message || 'Refund failed.', 'error');
+  }
+}
+
+async function runManualReconciliation() {
+  const out = document.getElementById('reconciliation-result');
+  try {
+    const result = await adminCloudFetch('adminRunPaymentReconciliation', { body: { limit: 100 } });
+    if (out) out.textContent = `Run ${result.runId || '-'} scanned ${result.scanned || 0}, found ${result.capturedFound || 0}, activated ${result.activated || 0}.`;
+    toast('Reconciliation completed.', 'success');
+    await loadPaymentResilienceView('reconciliation');
+  } catch (error) {
+    if (out) out.textContent = error.message || 'Reconciliation failed.';
+    toast(error.message || 'Reconciliation failed.', 'error');
+  }
+}
+
 function _agentCommissionPercent(agent) {
   const direct = Number(agent && agent.commissionPercent);
   if (Number.isFinite(direct)) return direct;
@@ -7106,5 +7781,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 </script>
+<script src="parichayam-site-common.js"></script>
 </body>
 </html>

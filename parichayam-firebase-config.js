@@ -10,7 +10,7 @@ window.PARICHAYAM_FIREBASE_CONFIG = window.PARICHAYAM_FIREBASE_CONFIG || {
 
 window.PARICHAYAM_FIREBASE_OPTIONS = window.PARICHAYAM_FIREBASE_OPTIONS || {
   appUrl: "https://parichayam.co.in",
-  supportEmail: "hello@parichayam.co.in",
+  supportEmail: "support@parichayam.co.in",
   supportPhone: "9440176078",
   adminEmails: [],
   stateCollection: "appState",
