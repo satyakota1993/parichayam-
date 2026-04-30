@@ -2067,35 +2067,10 @@ a{text-decoration:none;color:inherit;}
       </div>
 
       <!-- MATCHMAKER PACKAGES -->
-      <div class="mm-services" style="margin-bottom:1.1rem">
-        <div class="mm-svc-title">Matchmaker <em style="font-style:italic;color:var(--m)">Packages</em></div>
-        <div style="font-size:.64rem;color:var(--mu);margin-top:.2rem">Preview only. Live pricing and checkout will come from your account state, not these sample cards.</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:.65rem">
-          <div style="background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:11px;padding:.9rem;text-align:center;position:relative;">
-            <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin-bottom:.3rem">Included</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--d);margin-bottom:.18rem">Basic</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--m);font-weight:700">₹0</div>
-            <div style="font-size:.62rem;color:var(--mu);margin:.4rem 0 .65rem;line-height:1.5;">With your membership plan</div>
-            <div style="font-size:.66rem;color:var(--tx);text-align:left;line-height:1.7">✓ Profile review &amp; feedback<br>✓ Search guidance<br>✓ WhatsApp chat support<br>✓ 5 curated suggestions/month</div>
-            <button class="btn-mm-req" style="margin-top:.7rem;opacity:.5;cursor:default;font-size:.7rem">Active Plan</button>
-          </div>
-          <div style="background:linear-gradient(160deg,var(--d2),var(--d));border:2px solid var(--g);border-radius:11px;padding:.9rem;text-align:center;position:relative;">
-            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--g);color:var(--d2);font-size:.55rem;font-weight:700;padding:2px 12px;border-radius:10px;white-space:nowrap;letter-spacing:.06em">MOST POPULAR</div>
-            <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:.3rem">Premium</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--gl);margin-bottom:.18rem">Silver</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gl);font-weight:700">₹999<span style="font-size:.7rem;font-weight:300;color:rgba(255,255,255,.5)">/3 mo</span></div>
-            <div style="font-size:.62rem;color:rgba(255,255,255,.45);margin:.4rem 0 .65rem;line-height:1.5;">One-time payment · 3 months</div>
-            <div style="font-size:.66rem;color:rgba(255,255,255,.8);text-align:left;line-height:1.7">✓ Everything in Basic<br>✓ Jathakam compatibility review<br>✓ 15 curated matches/month<br>✓ Priority WhatsApp response<br>✓ Gotra pre-screening included</div>
-            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="showMatchmakerActionNotice('Live matchmaker plan checkout will appear here once this dashboard is connected to your account pricing.')">Preview only</button>
-          </div>
-          <div style="background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:11px;padding:.9rem;text-align:center;">
-            <div style="font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin-bottom:.3rem">Elite</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--d);margin-bottom:.18rem">Gold</div>
-            <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--m);font-weight:700">₹1,999<span style="font-size:.7rem;font-weight:300;color:var(--mu)">/6 mo</span></div>
-            <div style="font-size:.62rem;color:var(--mu);margin:.4rem 0 .65rem;line-height:1.5;">Premium service · 6 months</div>
-            <div style="font-size:.66rem;color:var(--tx);text-align:left;line-height:1.7">✓ Everything in Silver<br>✓ Background verification<br>✓ Family introduction facilitation<br>✓ Muhurtham planning<br>✓ Dedicated matchmaker hotline</div>
-            <button class="btn-mm-req" style="margin-top:.7rem;font-size:.7rem" onclick="showMatchmakerActionNotice('Live matchmaker plan checkout will appear here once this dashboard is connected to your account pricing.')">Preview only</button>
-          </div>
+      <div class="mm-services" id="mm-live-subscription-shell" style="margin-bottom:1.1rem">
+        <div class="mm-svc-title">Matchmaker <em style="font-style:italic;color:var(--m)">Subscription</em></div>
+        <div id="mm-subscription-live" style="margin-top:.65rem">
+          <div style="font-size:.72rem;color:var(--mu);padding:.9rem;background:var(--wh);border:1px solid rgba(201,150,58,.16);border-radius:10px">Loading matchmaker plans...</div>
         </div>
       </div>
 
@@ -4847,6 +4822,167 @@ function startAddonCheckout(params) {
   window.location.href = buildCheckoutUrl(params);
 }
 
+function parseMatchmakerTimestamp(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (typeof value === 'object') {
+    const seconds = value.seconds ?? value._seconds;
+    if (Number.isFinite(Number(seconds))) return Number(seconds) * 1000;
+    if (value.toDate && typeof value.toDate === 'function') return value.toDate().getTime();
+  }
+  return 0;
+}
+
+function formatMatchmakerDate(value) {
+  const ms = parseMatchmakerTimestamp(value);
+  if (!ms) return 'Not set';
+  return new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function labelMatchmakerPlan(plan) {
+  const key = String(plan || '').trim().toLowerCase();
+  if (key === 'monthly') return 'Monthly';
+  if (key === 'quarterly') return 'Quarterly';
+  if (key === 'six_months') return 'Six months';
+  return key ? key.replace(/_/g, ' ') : 'Matchmaker';
+}
+
+function renderMatchmakerSubscriptionPanel(info) {
+  const host = document.getElementById('mm-subscription-live');
+  if (!host) return;
+  const member = info?.member || {};
+  const subscription = info?.subscription || null;
+  const pricing = info?.pricing || {};
+  if (member.isPaid === false) {
+    host.innerHTML = `<div style="padding:.95rem;background:var(--wh);border:1px solid rgba(201,150,58,.18);border-radius:10px;font-size:.72rem;color:var(--mu);line-height:1.55">Matchmaker subscription is available after your Parichayam membership is active.</div>`;
+    return;
+  }
+  if (subscription && parseMatchmakerTimestamp(subscription.endDate) > Date.now()) {
+    const plan = labelMatchmakerPlan(subscription.plan || member.matchmakerPlan);
+    const activeUntil = formatMatchmakerDate(subscription.endDate || member.matchmakerEndDate);
+    const statusCopy = subscription.cancelsAtEnd
+      ? `Cancellation scheduled. Access remains active until ${activeUntil}.`
+      : `Active until ${activeUntil}.`;
+    host.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr auto;gap:.8rem;align-items:center;background:var(--wh);border:1px solid rgba(22,101,52,.18);border-radius:10px;padding:.95rem">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--d)">${escapeHtml(plan)} plan</div>
+          <div style="font-size:.66rem;color:var(--mu);margin-top:.25rem;line-height:1.5">${escapeHtml(statusCopy)}</div>
+          <div style="font-size:.62rem;color:var(--g);margin-top:.35rem">Suggestions: ${Number(subscription.suggestionsPerWeek || 3)} per week</div>
+        </div>
+        <button class="btn-mm-req" ${subscription.cancelsAtEnd ? 'disabled style="opacity:.55;cursor:not-allowed;font-size:.7rem"' : 'style="font-size:.7rem"'} onclick="cancelMatchmakerPlanAtPeriodEnd()">${subscription.cancelsAtEnd ? 'Cancels at period end' : 'Cancel at period end'}</button>
+      </div>`;
+    return;
+  }
+  const plans = Object.entries(pricing)
+    .filter(([, cfg]) => cfg && cfg.enabled !== false)
+    .map(([key, cfg]) => ({ key, ...cfg }));
+  if (!plans.length) {
+    host.innerHTML = `<div style="padding:.95rem;background:var(--wh);border:1px solid rgba(201,150,58,.18);border-radius:10px;font-size:.72rem;color:var(--mu)">Matchmaker plans are not available right now.</div>`;
+    return;
+  }
+  host.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem">${plans.map((plan) => `
+    <div style="background:var(--wh);border:1.5px solid rgba(201,150,58,.2);border-radius:10px;padding:.9rem;text-align:center;position:relative">
+      ${plan.label ? `<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--g);color:var(--d2);font-size:.52rem;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap">${escapeHtml(plan.label)}</div>` : ''}
+      <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--d);margin-bottom:.25rem">${escapeHtml(labelMatchmakerPlan(plan.key))}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--m);font-weight:700">₹${Number(plan.price || 0).toLocaleString('en-IN')}</div>
+      <div style="font-size:.62rem;color:var(--mu);margin:.4rem 0 .65rem;line-height:1.45">${Number(plan.durationDays || 30)} days · ${Number(plan.suggestionsPerWeek || 3)} suggestions/week</div>
+      <button class="btn-mm-req" style="font-size:.7rem" onclick="startMatchmakerPlanCheckout('${escapeHtml(plan.key)}')">Subscribe</button>
+    </div>`).join('')}</div>`;
+}
+
+async function refreshMatchmakerSubscriptionUI() {
+  const host = document.getElementById('mm-subscription-live');
+  if (!host || !window.ParichayamFirebase?.getMatchmakerEnrollmentInfo) return;
+  try {
+    const info = await window.ParichayamFirebase.getMatchmakerEnrollmentInfo();
+    window.MATCHMAKER_ENROLLMENT_INFO = info || {};
+    renderMatchmakerSubscriptionPanel(window.MATCHMAKER_ENROLLMENT_INFO);
+  } catch (error) {
+    host.innerHTML = `<div style="padding:.95rem;background:var(--wh);border:1px solid rgba(185,28,28,.18);border-radius:10px;font-size:.72rem;color:var(--rd)">Unable to load matchmaker subscription details.</div>`;
+  }
+}
+
+function ensureRazorpayCheckoutScript() {
+  if (window.Razorpay) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-razorpay-checkout]');
+    if (existing) {
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', reject, { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.dataset.razorpayCheckout = 'true';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Unable to load Razorpay checkout.'));
+    document.head.appendChild(script);
+  });
+}
+
+async function startMatchmakerPlanCheckout(plan) {
+  if (!window.ParichayamFirebase?.createMatchmakerSubscriptionOrder || !window.ParichayamFirebase?.enrollMatchmakerSubscription) {
+    showToast('Matchmaker checkout is not available in this build yet.', 'error');
+    return;
+  }
+  try {
+    const order = await window.ParichayamFirebase.createMatchmakerSubscriptionOrder({ plan, source: 'dashboard_matchmaker_tab' });
+    await ensureRazorpayCheckoutScript();
+    const session = getMemberSession() || {};
+    const checkout = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency || 'INR',
+      name: 'Parichayam',
+      description: `${labelMatchmakerPlan(plan)} matchmaker subscription`,
+      order_id: order.orderId,
+      prefill: {
+        name: session.name || '',
+        email: session.email || '',
+        contact: session.phone || '',
+      },
+      handler: async (response) => {
+        await window.ParichayamFirebase.enrollMatchmakerSubscription({
+          plan,
+          source: 'dashboard_matchmaker_tab',
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+        });
+        showToast('Matchmaker subscription activated.', 'success');
+        await hydrateMemberSession().catch(() => null);
+        await refreshMatchmakerSubscriptionUI();
+      },
+      modal: {
+        ondismiss: () => showToast('Matchmaker checkout was closed.', 'info'),
+      },
+    });
+    checkout.open();
+  } catch (error) {
+    showToast(error?.message || 'Unable to start matchmaker checkout.', 'error');
+  }
+}
+
+async function cancelMatchmakerPlanAtPeriodEnd() {
+  if (!window.ParichayamFirebase?.cancelMatchmakerSubscription) {
+    showToast('Matchmaker cancellation is not available in this build yet.', 'error');
+    return;
+  }
+  try {
+    await window.ParichayamFirebase.cancelMatchmakerSubscription({ reason: 'Cancelled from member dashboard' });
+    showToast('Cancellation scheduled at period end.', 'success');
+    await refreshMatchmakerSubscriptionUI();
+  } catch (error) {
+    showToast(error?.message || 'Unable to cancel matchmaker subscription.', 'error');
+  }
+}
+
 function startSilentUnlock(name, idx) {
   startAddonCheckout({
     type: 'silent-unlock',
@@ -5374,6 +5510,10 @@ async function sendMMMessage() {
   const sent = await postMatchmakerMessage(msg, 'matchmaker_chat');
   if (sent && inp) inp.value = '';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => refreshMatchmakerSubscriptionUI().catch(() => null), 900);
+});
 
 function appendMMMessage(text, dir) {
   const log = document.getElementById('mmChatLog');
